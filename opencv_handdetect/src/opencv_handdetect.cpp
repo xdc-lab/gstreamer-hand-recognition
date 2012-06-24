@@ -71,7 +71,7 @@ int main()
 			detectAndDraw( ssrc, cascade, scale);
 		}
 
-//		key event
+//		key event listening
 		c = waitKey(10);
 	}
 

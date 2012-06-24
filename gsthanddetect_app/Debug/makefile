@@ -29,7 +29,7 @@ all: gst_handdetect_plugin
 gst_handdetect_plugin: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L/usr/lib -L/usr/local/lib -L/usr/local/lib/gstreamer-0.10 -L/usr/local/lib/glib-2.0 -L/usr/lib/gstreamer-0.10 -o "gst_handdetect_plugin" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L/usr/lib -L/usr/local/lib -L/usr/local/lib/gstreamer-0.10 -L/usr/local/lib/glib-2.0 -L/usr/lib/gstreamer-0.10 -L"/home/javauser/workspace/gitfiles/gsthanddetect_plugin_so/Debug" -o "gst_handdetect_plugin" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

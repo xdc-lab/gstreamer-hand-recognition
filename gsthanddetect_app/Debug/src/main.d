@@ -1,7 +1,6 @@
-src/main.d: ../src/main.c \
- /usr/local/include/gstreamer-0.10/gst/base/gstpushsrc.h \
- /usr/local/include/gstreamer-0.10/gst/gst.h /usr/include/glib-2.0/glib.h \
- /usr/include/glib-2.0/glib/galloca.h /usr/include/glib-2.0/glib/gtypes.h \
+src/main.d: ../src/main.c /usr/local/include/gstreamer-0.10/gst/gst.h \
+ /usr/include/glib-2.0/glib.h /usr/include/glib-2.0/glib/galloca.h \
+ /usr/include/glib-2.0/glib/gtypes.h \
  /usr/local/lib/glib-2.0/include/glibconfig.h \
  /usr/include/glib-2.0/glib/gmacros.h \
  /usr/include/glib-2.0/glib/gversionmacros.h \
@@ -158,11 +157,7 @@ src/main.d: ../src/main.c \
  /usr/local/include/gstreamer-0.10/gst/gstutils.h \
  /usr/local/include/gstreamer-0.10/gst/gstparse.h \
  /usr/local/include/gstreamer-0.10/gst/gstxml.h \
- /usr/local/include/gstreamer-0.10/gst/gstcompat.h \
- /usr/local/include/gstreamer-0.10/gst/base/gstbasesrc.h \
- ../src/../gsthanddetect.h
-
-/usr/local/include/gstreamer-0.10/gst/base/gstpushsrc.h:
+ /usr/local/include/gstreamer-0.10/gst/gstcompat.h
 
 /usr/local/include/gstreamer-0.10/gst/gst.h:
 
@@ -513,7 +508,3 @@ src/main.d: ../src/main.c \
 /usr/local/include/gstreamer-0.10/gst/gstxml.h:
 
 /usr/local/include/gstreamer-0.10/gst/gstcompat.h:
-
-/usr/local/include/gstreamer-0.10/gst/base/gstbasesrc.h:
-
-../src/../gsthanddetect.h:

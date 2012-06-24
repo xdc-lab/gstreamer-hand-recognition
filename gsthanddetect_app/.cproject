@@ -47,6 +47,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/lib/gstreamer-0.10"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/glib-2.0"/>
 									<listOptionValue builtIn="false" value="/usr/lib/gstreamer-0.10"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gsthanddetect_plugin_sharedlib}/Debug&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.608199983" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="gstreamer-0.10"/>
@@ -56,6 +57,7 @@
 									<listOptionValue builtIn="false" value="gstcontroller-0.10"/>
 									<listOptionValue builtIn="false" value="gstcheck-0.10"/>
 									<listOptionValue builtIn="false" value="glib-2.0"/>
+									<listOptionValue builtIn="false" value="gsthanddetect_plugin_sharedlib"/>
 									<listOptionValue builtIn="false" value="opencv_core"/>
 									<listOptionValue builtIn="false" value="opencv_highgui"/>
 									<listOptionValue builtIn="false" value="opencv_objdetect"/>

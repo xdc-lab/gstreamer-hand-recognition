@@ -1,0 +1,8 @@
+This is the documentation of the gstreamer plugin development.
+
+The hand gesture recognition is realised via the haartraining, which covers three gestures - flat open palm, flat contract palm, and front-face fist. The use of these gestures are defined as follows:
+
+1. flat open palm - STOP the media play
+2. flat contrast palm - PLAY the media play
+3. fist - moving up/down => change the volume of media play
+	- moving left/right => change the position of media play, this is kind of fast forward/rewind.

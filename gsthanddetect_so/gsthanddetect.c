@@ -312,11 +312,11 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 		  /* read a hand detect result */
 		  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
 
-		  /* define a structure to contain the result */
+		  /* define a structure to contain the result in message */
 		  GstStructure *s = gst_structure_new(
 				  "hand",
-				  "x", G_TYPE_UINT, r->x,
-				  "y", G_TYPE_UINT, r->y,
+				  "x", G_TYPE_UINT, r->x + r->width * 0.5,
+				  "y", G_TYPE_UINT, r->y + r->height * 0.5,
 				  "width", G_TYPE_UINT, r->width,
 				  "height", G_TYPE_UINT, r->height,
 				  NULL);

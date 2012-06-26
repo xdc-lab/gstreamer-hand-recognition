@@ -119,6 +119,7 @@ src/main.d: ../src/main.c /usr/local/include/gstreamer-0.10/gst/gst.h \
  /usr/local/include/gstreamer-0.10/gst/gstformat.h \
  /usr/local/include/gstreamer-0.10/gst/gstiterator.h \
  /usr/local/include/gstreamer-0.10/gst/gsttaglist.h \
+ /usr/local/include/gstreamer-0.10/gst/gsttoc.h \
  /usr/local/include/gstreamer-0.10/gst/gstquery.h \
  /usr/local/include/gstreamer-0.10/gst/gsttask.h \
  /usr/local/include/gstreamer-0.10/gst/gsttaskpool.h \
@@ -148,6 +149,7 @@ src/main.d: ../src/main.c /usr/local/include/gstreamer-0.10/gst/gst.h \
  /usr/local/include/gstreamer-0.10/gst/gstsegment.h \
  /usr/local/include/gstreamer-0.10/gst/gstsystemclock.h \
  /usr/local/include/gstreamer-0.10/gst/gsttagsetter.h \
+ /usr/local/include/gstreamer-0.10/gst/gsttocsetter.h \
  /usr/local/include/gstreamer-0.10/gst/gsttrace.h \
  /usr/local/include/gstreamer-0.10/gst/gsttypefind.h \
  /usr/local/include/gstreamer-0.10/gst/gsttypefindfactory.h \
@@ -429,6 +431,8 @@ src/main.d: ../src/main.c /usr/local/include/gstreamer-0.10/gst/gst.h \
 
 /usr/local/include/gstreamer-0.10/gst/gsttaglist.h:
 
+/usr/local/include/gstreamer-0.10/gst/gsttoc.h:
+
 /usr/local/include/gstreamer-0.10/gst/gstquery.h:
 
 /usr/local/include/gstreamer-0.10/gst/gsttask.h:
@@ -486,6 +490,8 @@ src/main.d: ../src/main.c /usr/local/include/gstreamer-0.10/gst/gst.h \
 /usr/local/include/gstreamer-0.10/gst/gstsystemclock.h:
 
 /usr/local/include/gstreamer-0.10/gst/gsttagsetter.h:
+
+/usr/local/include/gstreamer-0.10/gst/gsttocsetter.h:
 
 /usr/local/include/gstreamer-0.10/gst/gsttrace.h:
 

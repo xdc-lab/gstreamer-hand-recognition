@@ -2,7 +2,7 @@
  * GStreamer
  * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
  * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2012 andol <<user@hostname.org>>
+ * Copyright (C) 2012 andol li <<andol@andol.info>>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -47,11 +47,11 @@
 #define __GST_HANDDETECT_H__
 
 #ifndef VERSION
-#define VERSION "0.10.36"
+#define VERSION "0.10.36" /* for GST_PLUGIN_DEFINE use */
 #endif
 
 #include <gst/gst.h>
-//opencv includes
+/* opencv includes */
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include <opencv/highgui.h>
@@ -75,16 +75,17 @@ typedef struct _GsthanddetectClass GsthanddetectClass;
 struct _Gsthanddetect
 {
   GstElement element;
-
   GstPad *sinkpad, *srcpad;
-
   gboolean display;
-
   gchar *profile;
-
   gboolean silent;
 
-  IplImage *cvImage, *cvGray;
+  /* opencv variables */
+  /* cvImage - image from video cam,
+   * scvImage - resized small cvImage,
+   * and cvGray - cvt scvImage color into gray
+   */
+  IplImage *cvImage, *scvImage, *cvGray;
   CvHaarClassifierCascade *cvCascade;
   CvMemStorage *cvStorage;
 };

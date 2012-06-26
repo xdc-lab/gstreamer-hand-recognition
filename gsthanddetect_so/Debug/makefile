@@ -8,7 +8,6 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include src/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -23,19 +22,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: gsthanddetect_app
+all: libgsthanddetect_so.so
 
 # Tool invocations
-gsthanddetect_app: $(OBJS) $(USER_OBJS)
+libgsthanddetect_so.so: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L/usr/lib -L/usr/local/lib -L/usr/local/lib/gstreamer-0.10 -L/usr/local/lib/glib-2.0 -L/usr/lib/gstreamer-0.10 -L"/home/andol/workspace/gitfiles/gsthanddetect_so/Debug" -o "gsthanddetect_app" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L/usr/lib -L/usr/local/lib -L/usr/local/lib/gstreamer-0.10 -L/usr/local/lib/glib-2.0 -L/usr/lib/gstreamer-0.10 -shared -o "libgsthanddetect_so.so" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) gsthanddetect_app
+	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libgsthanddetect_so.so
 	-@echo ' '
 
 .PHONY: all clean dependents

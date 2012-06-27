@@ -3,10 +3,11 @@
  *
  *  Author: andol li, andol@andol.info
  *  Created on: Jun 2012
- *  Description: gsthanddetect plugin application test
+ *  Description: gsthanddetect_so plugin application test
  */
 
 #include <gst/gst.h>
+
 
 static gboolean
 bus_call (GstBus *bus, GstMessage *msg, gpointer data)
@@ -48,7 +49,7 @@ main (gint argc, gchar *argv[])
 	GMainLoop *loop;
 	GstBus *bus;
 
-	/* initialization */
+	/* initialise gst */
 	gst_init (&argc, &argv);
 
 	loop = g_main_loop_new (NULL, FALSE);
@@ -57,7 +58,7 @@ main (gint argc, gchar *argv[])
 		return 01;
 	}
 
-	/* create elements */
+	/* create pipeline element */
 	pipeline = gst_pipeline_new ("my_pipeline");
 
 	/* watch for messages on the pipeline’s bus (note that this will only
@@ -68,7 +69,7 @@ main (gint argc, gchar *argv[])
 
 	filesrc = gst_element_factory_make ("filesrc", "my_filesource");
 	decoder = gst_element_factory_make ("mad", "my_decoder");
-	handdetecter = gst_element_factory_make("handdetect", "my_handdetect");
+	handdetecter = gst_element_factory_make("Gsthanddetect", "my_handdetect");
 
 	/* putting an audioconvert element here to convert the output of the
 	* decoder into a format that my_filter can handle (we are assuming it

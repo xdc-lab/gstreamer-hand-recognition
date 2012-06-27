@@ -352,7 +352,6 @@ gst_handdetect_load_profile(Gsthanddetect *filter){
 	}
 }
 
-
 /* entry point to initialize the plug-in
  * initialize the plug-in itself
  * register the element factories and other features

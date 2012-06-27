@@ -80,8 +80,8 @@ struct _Gsthanddetect
   gchar *profile;
   gboolean silent;
 
-  /* opencv variables */
-  /* cvImage - image from video cam,
+  /* opencv variables
+   * cvImage - image from video cam,
    * scvImage - resized small cvImage,
    * and cvGray - cvt scvImage color into gray
    */

@@ -39,7 +39,7 @@ main(gint argc, gchar **argv){
 	caps = gst_caps_new_simple("video/x-raw-yuv",
 			"width", G_TYPE_INT, 320,
 			"height", G_TYPE_INT, 240,
-			"framerate", GST_TYPE_FRACTION, 20,
+			"framerate", GST_TYPE_FRACTION, 30,
 			1, NULL);
 
 	//set video camera parameters

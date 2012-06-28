@@ -44,7 +44,7 @@ gint
 main (gint argc, gchar *argv[])
 {
 	GstStateChangeReturn ret;
-	GstElement *pipeline, *filesrc, *decoder, *filter, *sink, *handdetecter;
+	GstElement *pipeline, *filesrc, *decoder, *filter, *sink;
 	GstElement *convert1, *convert2, *resample;
 	GMainLoop *loop;
 	GstBus *bus;
@@ -53,10 +53,12 @@ main (gint argc, gchar *argv[])
 	gst_init (&argc, &argv);
 
 	loop = g_main_loop_new (NULL, FALSE);
+	/*
 	if (argc != 2) {
 		g_print ("Usage: %s <mp3 filename>\n", argv[0]);
 		return 01;
 	}
+	*/
 
 	/* create pipeline element */
 	pipeline = gst_pipeline_new ("my_pipeline");
@@ -69,7 +71,6 @@ main (gint argc, gchar *argv[])
 
 	filesrc = gst_element_factory_make ("filesrc", "my_filesource");
 	decoder = gst_element_factory_make ("mad", "my_decoder");
-	handdetecter = gst_element_factory_make("Gsthanddetect", "my_handdetect");
 
 	/* putting an audioconvert element here to convert the output of the
 	* decoder into a format that my_filter can handle (we are assuming it
@@ -77,7 +78,7 @@ main (gint argc, gchar *argv[])
 	convert1 = gst_element_factory_make ("audioconvert", "audioconvert1");
 
 	/* use "identity" here for a filter that does nothing */
-	filter = gst_element_factory_make ("my_filter", "my_filter");
+	filter = gst_element_factory_make ("handdetect", "my_filter");
 
 	/* there should always be audioconvert and audioresample elements before
 	* the audio sink, since the capabilities of the audio sink usually vary
@@ -102,7 +103,8 @@ main (gint argc, gchar *argv[])
 		return -1;
 	}
 
-	g_object_set (G_OBJECT (filesrc), "location", argv[1], NULL);
+//	g_object_set (G_OBJECT (filesrc), "location", argv[1], NULL);
+	g_object_set (G_OBJECT(filesrc), "location", "../music.mp3", NULL);
 
 	gst_bin_add_many (GST_BIN (pipeline), filesrc, decoder, convert1, filter, convert2, resample, sink, NULL);
 

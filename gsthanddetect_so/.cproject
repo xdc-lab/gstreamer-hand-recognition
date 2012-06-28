@@ -32,7 +32,7 @@
 								<option id="gnu.cpp.compiler.option.optimization.level.1105747171" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.debugging.level.2089275471" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.861496972" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+							<tool command="gcc" id="cdt.managedbuild.tool.gnu.c.compiler.base.861496972" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.include.paths.714877197" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
@@ -46,7 +46,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.680623231" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1552973849" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.363257995" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
+							<tool command="gcc" id="cdt.managedbuild.tool.gnu.c.linker.base.363257995" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base">
 								<option id="gnu.c.link.option.libs.945679619" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="gstreamer-0.10"/>
 									<listOptionValue builtIn="false" value="gstbase-0.10"/>

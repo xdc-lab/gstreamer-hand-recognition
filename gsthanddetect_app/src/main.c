@@ -20,7 +20,8 @@ main(gint argc, gchar **argv){
 	gchar *video_device = "/dev/video0";
 
 	//elements
-	GstElement *pipeline, *v4l2src, *ffmpegcolorspace, *vqueue, *vsink;
+	GstElement *pipeline, *v4l2src, *v4l2sink;
+	GstElement *handdetect, *ffmpegcolorspace, *vqueue; //test elements
 
 	//caps
 	GstCaps *caps;
@@ -31,9 +32,11 @@ main(gint argc, gchar **argv){
 	//create elements
 	pipeline = gst_pipeline_new("pipeline");
 	v4l2src = gst_element_factory_make("v4l2src", "video_source");
+	v4l2sink = gst_element_factory_make("xvimagesink", "v4l2sink");
+
 	ffmpegcolorspace = gst_element_factory_make("ffmpegcolorspace", "ffmpegcolorspace");
 	vqueue = gst_element_factory_make("queue", NULL);
-	vsink = gst_element_factory_make("xvimagesink", "vsink");
+	handdetect = gst_element_factory_make("handdetect", "handdetect");
 
 	//create caps for video streams
 	caps = gst_caps_new_simple("video/x-raw-yuv",
@@ -46,14 +49,15 @@ main(gint argc, gchar **argv){
 	g_object_set(G_OBJECT(v4l2src), "device", video_device, NULL);
 
 	//add elements to pipeline
-	gst_bin_add_many(GST_BIN(pipeline), v4l2src, vsink, NULL);
+	gst_bin_add_many(GST_BIN(pipeline), v4l2src, v4l2sink, NULL);
 
 	//link these elements
-	if(!gst_element_link_filtered( v4l2src, vsink, caps)){
+
+	if(!gst_element_link_filtered( v4l2src, v4l2sink, caps)){
 		printf("\ncaps not negotiatable!!!");
 		return 0;
 	}
-	if(!gst_element_link_many(v4l2src, vsink, NULL)){
+	if(!gst_element_link_many(v4l2src, v4l2sink, NULL)){
 		printf("\nelement link unsuccessfull!!!");
 	}
 

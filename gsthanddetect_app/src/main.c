@@ -34,6 +34,7 @@ main(gint argc, gchar **argv){
 	v4l2src = gst_element_factory_make("v4l2src", "video_source");
 	v4l2sink = gst_element_factory_make("xvimagesink", "v4l2sink");
 
+	/* create TEST elements */
 	ffmpegcolorspace = gst_element_factory_make("ffmpegcolorspace", "ffmpegcolorspace");
 	vqueue = gst_element_factory_make("queue", NULL);
 	handdetect = gst_element_factory_make("handdetect", "handdetect");
@@ -52,7 +53,6 @@ main(gint argc, gchar **argv){
 	gst_bin_add_many(GST_BIN(pipeline), v4l2src, v4l2sink, NULL);
 
 	//link these elements
-
 	if(!gst_element_link_filtered( v4l2src, v4l2sink, caps)){
 		printf("\ncaps not negotiatable!!!");
 		return 0;
@@ -66,7 +66,7 @@ main(gint argc, gchar **argv){
 	//main loop
 	g_main_loop_run(loop);
 
-	//cleand
+	//clean
 	gst_object_unref(pipeline);
 	gst_caps_unref(caps);
 

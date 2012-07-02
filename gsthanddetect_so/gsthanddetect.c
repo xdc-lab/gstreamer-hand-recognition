@@ -78,7 +78,6 @@ enum
 
 enum
 {
-	PROP_0,
 	PROP_DISPLAY,
 	PROP_PROFILE
 };
@@ -108,7 +107,7 @@ static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
-/* clean up - opencv images and parameters */
+/* clean up - openCV images and parameters */
 static void
 gst_handdetect_finalise(GObject *obj)
 {
@@ -161,7 +160,7 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 			  g_param_spec_boolean (
 					  "display",
 					  "Display",
-					  "Sets whether the detected hands should be highlighted in the output",
+					  "Whether the detected hands are highlighted in the output",
 					  TRUE,
 					  G_PARAM_READWRITE)
 			  );
@@ -287,7 +286,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
 
-	  /* resize if the image size is too large */
+	  /* resize if the image size is too large - to improve detect performances */
 	  if(filter->cvImage->width > 320 || filter->cvImage->height > 240)
 		  cvResize(filter->cvImage, filter->scvImage, 0);
 	  cvCvtColor(filter->scvImage, filter->cvGray, CV_RGB2GRAY);
@@ -296,20 +295,21 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 		  /* detect hands */
 		  hands = cvHaarDetectObjects (
 				  filter->cvGray,
-			  filter->cvCascade,
-			  filter->cvStorage,
-			  1.1,
-			  2,
-			  0,
-			  cvSize(10,10),
-			  cvSize(50, 50));
+				  filter->cvCascade,
+				  filter->cvStorage,
+				  1.1,
+				  2,
+				  0,
+				  cvSize(10,10),
+				  cvSize(50, 50)
+				  );
 
 	  /* if hands detected, get the buffer ready */
 	  if(filter->display && hands && hands->total > 0){
 		  buf = gst_buffer_make_writable(buf);
 	  }
 
-	  /* go through all hand detect results */
+	  /* go through all hand detect results - (need to filter out the best one) */
 	  for(i = 0; i < (hands ? hands->total : 0); i++){
 		  /* read a hand detect result */
 		  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
@@ -323,9 +323,9 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  "height", G_TYPE_UINT, r->height,
 				  NULL);
 
-		  /* set up new message element */
+		  /* set up new message element based on the structure */
 		  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
-		  /* post a msg on the filter element's GstBus */
+		  /* post the msg from the filter to element GstBus */
 		  gst_element_post_message(GST_ELEMENT(filter), m);
 
 		  /* draw out the circle on detected hands */

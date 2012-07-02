@@ -46,12 +46,13 @@
 /**
  * SECTION:element-handdetect
  *
- * FIXME:operats hand gesture detection in video streams and images, and enable media operation e.g. play/stop/fast forward/back rewind.
+ * FIXME:operates hand gesture detection in video streams and images, and enable media operation e.g. play/stop/fast forward/back rewind.
  *
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch -v -m fakesrc ! handdetect ! fakesink silent=TRUE
+ * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale !
+ * decodebin ! ffmpegcolorspace ! handdetect display=TRUE profile="./fist.xml" ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
  */
@@ -95,7 +96,7 @@ static GstStaticPadTemplate sink_factory = GST_STATIC_PAD_TEMPLATE ("sink",
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw-yuv, width=320,height=240,framerate=30")
+    GST_STATIC_CAPS ("video/x-raw-yuv")
     );
 
 GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
@@ -186,6 +187,7 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 static void
 gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 {
+		g_print("!!!plugin init OK\n");
 	  filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
 	  gst_pad_set_setcaps_function (
 			  filter->sinkpad,
@@ -288,58 +290,61 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
 
 	  /* resize if the image size is too large */
+	  /*
 	  if(filter->cvImage->width > 320 || filter->cvImage->height > 240)
 		  cvResize(filter->cvImage, filter->scvImage, 0);
 	  cvCvtColor(filter->scvImage, filter->cvGray, CV_RGB2GRAY);
+	  */
+	  g_print("=========OK=========\n");
 
 	  if(filter->cvCascade){
-		  /* detect hands */
-		  hands = cvHaarDetectObjects (
-				  filter->cvGray,
-			  filter->cvCascade,
-			  filter->cvStorage,
-			  1.1,
-			  2,
-			  0,
-			  cvSize(10,10),
-			  cvSize(50, 50));
+		  g_print("!!!haar file OK!!!\n");
+			  /* detect hands */
+			  hands = cvHaarDetectObjects (
+					  filter->cvGray,
+				  filter->cvCascade,
+				  filter->cvStorage,
+				  1.1,
+				  2,
+				  0,
+				  cvSize(10,10),
+				  cvSize(50, 50));
 
-	  /* if hands detected, get the buffer ready */
-	  if(filter->display && hands && hands->total > 0){
-		  buf = gst_buffer_make_writable(buf);
-	  }
+		  /* if hands detected, get the buffer ready */
+		  if(filter->display && hands && hands->total > 0){
+			  buf = gst_buffer_make_writable(buf);
+		  }
 
-	  /* go through all hand detect results */
-	  for(i = 0; i < (hands ? hands->total : 0); i++){
-		  /* read a hand detect result */
-		  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
+		  /* go through all hand detect results */
+		  for(i = 0; i < (hands ? hands->total : 0); i++){
+			  /* read a hand detect result */
+				  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
 
-		  /* define a structure to contain the result in message */
-		  GstStructure *s = gst_structure_new(
-				  "hand",
-				  "x", G_TYPE_UINT, r->x + r->width * 0.5,
-				  "y", G_TYPE_UINT, r->y + r->height * 0.5,
-				  "width", G_TYPE_UINT, r->width,
-				  "height", G_TYPE_UINT, r->height,
-				  NULL);
+				  /* define a structure to contain the result in message */
+				  GstStructure *s = gst_structure_new(
+						  "hand",
+						  "x", G_TYPE_UINT, r->x + r->width * 0.5,
+						  "y", G_TYPE_UINT, r->y + r->height * 0.5,
+						  "width", G_TYPE_UINT, r->width,
+						  "height", G_TYPE_UINT, r->height,
+						  NULL);
 
-		  /* set up new message element */
-		  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
-		  /* post a msg on the filter element's GstBus */
-		  gst_element_post_message(GST_ELEMENT(filter), m);
+				  /* set up new message element */
+				  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
+				  /* post a msg on the filter element's GstBus */
+				  gst_element_post_message(GST_ELEMENT(filter), m);
 
-		  /* draw out the circle on detected hands */
-		  if(filter->display){
-			  CvPoint center;
-			  int radius;
-			  center.x = cvRound((r->x + r->width * 0.5));
-			  center.y = cvRound((r->y + r->height * 0.5));
-			  radius = cvRound((r->width + r->height) * 0.25);
-			  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
+				  /* draw out the circle on detected hands */
+				  if(filter->display){
+					  CvPoint center;
+					  int radius;
+					  center.x = cvRound((r->x + r->width * 0.5));
+					  center.y = cvRound((r->y + r->height * 0.5));
+					  radius = cvRound((r->width + r->height) * 0.25);
+					  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
+				  }
 		  }
 	  }
-
-  }
 
 	  /* just push out the incoming buffer without touching it */
 	  return gst_pad_push (filter->srcpad, buf);

@@ -78,7 +78,6 @@ struct _Gsthanddetect
   GstPad *sinkpad, *srcpad;
   gboolean display;
   gchar *profile;
-  gboolean silent;
 
   /* opencv variables
    * cvImage - image from video cam,
@@ -90,7 +89,7 @@ struct _Gsthanddetect
   CvMemStorage *cvStorage;
 };
 
-struct _GsthanddetectClass 
+struct _GsthanddetectClass
 {
   GstElementClass parent_class;
 };

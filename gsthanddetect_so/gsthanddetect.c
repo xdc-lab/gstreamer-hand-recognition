@@ -52,7 +52,7 @@
  * <title>Example launch line</title>
  * |[
  * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale !
- * decodebin ! ffmpegcolorspace ! handdetect display=TRUE profile="./fist.xml" ! ffmpegcolorspace ! xvimagesink
+ * decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
  */
@@ -68,7 +68,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 #define GST_CAT_DEFAULT gst_handdetect_debug
 
 /* define the dir of haar file for hand detect */
-#define HAAR_FILE "./fist.xml"
+#define HAAR_FILE "/home/javauser/workspace/gitfiles/gsthanddetect_so/Debug/fist.xml"
 
 /* Filter signals and args */
 enum
@@ -120,6 +120,8 @@ gst_handdetect_finalise(GObject *obj)
 	    cvReleaseImage (&filter->cvGray);
 	  }
 
+	cvDestroyAllWindows();
+
 	g_free (filter->profile);
 
 	G_OBJECT_CLASS (parent_class)->finalize (obj);
@@ -139,6 +141,8 @@ gst_handdetect_base_init (gpointer gclass)
 
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&src_factory));
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&sink_factory));
+
+	cvNamedWindow("probe", 1);
 }
 
 /* initialise the HANDDETECT class */
@@ -266,7 +270,7 @@ gst_handdetect_set_caps (GstPad * pad, GstCaps * caps)
 	  gst_structure_get_int(structure, "height", &height);
 
 	  filter->cvImage = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 3);
-	  filter->scvImage = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 3);
+	  filter->scvImage = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 3);
 	  filter->cvGray = cvCreateImage (cvSize(filter->scvImage->width, filter->scvImage->height), IPL_DEPTH_8U, 1);
 	  filter->cvStorage = cvCreateMemStorage (0);
 
@@ -288,61 +292,58 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 
 	  filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
-
-	  /* resize if the image size is too large */
-	  /*
-	  if(filter->cvImage->width > 320 || filter->cvImage->height > 240)
-		  cvResize(filter->cvImage, filter->scvImage, 0);
-	  cvCvtColor(filter->scvImage, filter->cvGray, CV_RGB2GRAY);
-	  */
-	  g_print("=========OK=========\n");
+	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
+	  filter->scvImage->imageData = filter->cvImage->imageData;
+	  cvClearMemStorage (filter->cvStorage);
 
 	  if(filter->cvCascade){
-		  g_print("!!!haar file OK!!!\n");
-			  /* detect hands */
-			  hands = cvHaarDetectObjects (
-					  filter->cvGray,
+		  /* detect hands */
+		  cvShowImage("probe", filter->cvGray);
+		  hands = cvHaarDetectObjects (
+				  filter->scvImage,
 				  filter->cvCascade,
 				  filter->cvStorage,
 				  1.1,
 				  2,
 				  0,
-				  cvSize(10,10),
-				  cvSize(50, 50));
+				  cvSize(30,30), cvSize(100, 100));
 
 		  /* if hands detected, get the buffer ready */
 		  if(filter->display && hands && hands->total > 0){
 			  buf = gst_buffer_make_writable(buf);
+			  g_print("hands detected!!!\n");
 		  }
 
 		  /* go through all hand detect results */
 		  for(i = 0; i < (hands ? hands->total : 0); i++){
 			  /* read a hand detect result */
-				  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
+			  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
 
-				  /* define a structure to contain the result in message */
-				  GstStructure *s = gst_structure_new(
-						  "hand",
-						  "x", G_TYPE_UINT, r->x + r->width * 0.5,
-						  "y", G_TYPE_UINT, r->y + r->height * 0.5,
-						  "width", G_TYPE_UINT, r->width,
-						  "height", G_TYPE_UINT, r->height,
-						  NULL);
+			  /* define a structure to contain the result in message */
+			  GstStructure *s = gst_structure_new(
+					  "hand",
+					  "x", G_TYPE_UINT, r->x + r->width * 0.5,
+					  "y", G_TYPE_UINT, r->y + r->height * 0.5,
+					  "width", G_TYPE_UINT, r->width,
+					  "height", G_TYPE_UINT, r->height,
+					  NULL);
 
-				  /* set up new message element */
-				  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
-				  /* post a msg on the filter element's GstBus */
-				  gst_element_post_message(GST_ELEMENT(filter), m);
+			  /* set up new message element */
+			  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
+			  /* post a msg on the filter element's GstBus */
+			  gst_element_post_message(GST_ELEMENT(filter), m);
 
-				  /* draw out the circle on detected hands */
-				  if(filter->display){
-					  CvPoint center;
-					  int radius;
-					  center.x = cvRound((r->x + r->width * 0.5));
-					  center.y = cvRound((r->y + r->height * 0.5));
-					  radius = cvRound((r->width + r->height) * 0.25);
-					  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
-				  }
+			  /* draw out the circle on detected hands */
+			  if(filter->display){
+				  CvPoint center;
+				  int radius;
+				  center.x = cvRound((r->x + r->width * 0.5));
+				  center.y = cvRound((r->y + r->height * 0.5));
+				  radius = cvRound((r->width + r->height) * 0.25);
+				  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
+				  //g_print("hand position:x %d, y %d\n", center.x, center.y);
+				  g_print("hand position-x: y: \n");
+			  }
 		  }
 	  }
 

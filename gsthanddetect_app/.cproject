@@ -47,7 +47,6 @@
 									<listOptionValue builtIn="false" value="/usr/local/lib/gstreamer-0.10"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/glib-2.0"/>
 									<listOptionValue builtIn="false" value="/usr/lib/gstreamer-0.10"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gsthanddetect_so/Debug}&quot;"/>
 								</option>
 								<option id="gnu.c.link.option.libs.608199983" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="gstreamer-0.10"/>

@@ -51,8 +51,7 @@
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale !
- * decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
+ * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale ! decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
  */
@@ -62,13 +61,14 @@
 #endif
 
 #include <gst/gst.h>
+#include "gstopencvutils.h"
 #include "gsthanddetect.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 #define GST_CAT_DEFAULT gst_handdetect_debug
 
 /* define the dir of haar file for hand detect */
-#define HAAR_FILE "/home/javauser/workspace/gitfiles/gsthanddetect_so/Debug/fist.xml"
+#define HAAR_FILE "/usr/local/share/opencv/haarcascades/fist.xml"
 
 /* Filter signals and args */
 enum
@@ -109,7 +109,7 @@ static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
-/* clean up - opencv images and parameters */
+/* clean opencv images and parameters */
 static void
 gst_handdetect_finalise(GObject *obj)
 {
@@ -117,13 +117,12 @@ gst_handdetect_finalise(GObject *obj)
 
 	if (filter->cvImage) {
 	    cvReleaseImage (&filter->cvImage);
-	    cvReleaseImage (&filter->cvGray);
 	  }
-
-	cvDestroyAllWindows();
+	if(filter->cvGray) {
+	    cvReleaseImage (&filter->cvGray);
+	}
 
 	g_free (filter->profile);
-
 	G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
@@ -141,8 +140,6 @@ gst_handdetect_base_init (gpointer gclass)
 
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&src_factory));
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&sink_factory));
-
-	cvNamedWindow("probe", 1);
 }
 
 /* initialise the HANDDETECT class */
@@ -161,17 +158,17 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 	gobject_class->get_property = gst_handdetect_get_property;
 
 	g_object_class_install_property (
-			  gobject_class,
-			  PROP_DISPLAY,
-			  g_param_spec_boolean (
-					  "display",
-					  "Display",
-					  "Sets whether the detected hands should be highlighted in the output",
-					  TRUE,
-					  G_PARAM_READWRITE)
-			  );
+			gobject_class,
+			PROP_DISPLAY,
+			g_param_spec_boolean (
+				  "display",
+				  "Display",
+				  "Sets whether the detected hands should be highlighted in the output",
+				  TRUE,
+				  G_PARAM_READWRITE)
+			);
 
-  g_object_class_install_property (
+	g_object_class_install_property (
 			gobject_class,
 			PROP_PROFILE,
 			g_param_spec_string (
@@ -191,7 +188,9 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 static void
 gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 {
-		g_print("!!!plugin init OK\n");
+	  g_print("!!!plugin init OK\n");
+	  g_print("!!!%s\n", HAAR_FILE);
+
 	  filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
 	  gst_pad_set_setcaps_function (
 			  filter->sinkpad,
@@ -270,8 +269,7 @@ gst_handdetect_set_caps (GstPad * pad, GstCaps * caps)
 	  gst_structure_get_int(structure, "height", &height);
 
 	  filter->cvImage = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 3);
-	  filter->scvImage = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 3);
-	  filter->cvGray = cvCreateImage (cvSize(filter->scvImage->width, filter->scvImage->height), IPL_DEPTH_8U, 1);
+	  filter->cvGray = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 1);
 	  filter->cvStorage = cvCreateMemStorage (0);
 
 	  otherpad = (pad == filter->srcpad) ? filter->sinkpad : filter->srcpad;
@@ -292,30 +290,34 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 
 	  filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
+	  	  g_print("get filter->cvImage from buf OK!!!\n"); //debug info
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
-	  filter->scvImage->imageData = filter->cvImage->imageData;
 	  cvClearMemStorage (filter->cvStorage);
 
 	  if(filter->cvCascade){
 		  /* detect hands */
-		  cvShowImage("probe", filter->cvGray);
 		  hands = cvHaarDetectObjects (
-				  filter->scvImage,
+				  filter->cvGray,
 				  filter->cvCascade,
 				  filter->cvStorage,
 				  1.1,
 				  2,
 				  0,
-				  cvSize(30,30), cvSize(100, 100));
+				  cvSize(24,24) //haar training picture size 24x24
+				  #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
+				  , cvSize(320, 240)
+				  #endif
+				  );
 
-		  /* if hands detected, get the buffer ready */
+		  /* if hands detected, get the buffer writable */
 		  if(filter->display && hands && hands->total > 0){
 			  buf = gst_buffer_make_writable(buf);
-			  g_print("hands detected!!!\n");
+			  g_print("!!!%d hands detected\n", (int)hands->total);
 		  }
 
-		  /* go through all hand detect results */
+		  /* go through all hands detected */
 		  for(i = 0; i < (hands ? hands->total : 0); i++){
+			  g_print("!!!-%d\n", i);//debug info
 			  /* read a hand detect result */
 			  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
 
@@ -330,10 +332,10 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 
 			  /* set up new message element */
 			  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
-			  /* post a msg on the filter element's GstBus */
+			  /* post the msg to GstBus */
 			  gst_element_post_message(GST_ELEMENT(filter), m);
 
-			  /* draw out the circle on detected hands */
+			  /* if display, draw out the circle on detected hands */
 			  if(filter->display){
 				  CvPoint center;
 				  int radius;
@@ -341,8 +343,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  center.y = cvRound((r->y + r->height * 0.5));
 				  radius = cvRound((r->width + r->height) * 0.25);
 				  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
-				  //g_print("hand position:x %d, y %d\n", center.x, center.y);
-				  g_print("hand position-x: y: \n");
+				  g_print("!!!hand position:x- %d, y- %d\n", center.x, center.y); //debug info
 			  }
 		  }
 	  }

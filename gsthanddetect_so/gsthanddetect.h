@@ -53,11 +53,11 @@
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
-#include <opencv/cxcore.h>
-#include <opencv/highgui.h>
+#if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
+#include <opencv2/objdetect/objdetect.hpp>
+#endif
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_HANDDETECT \
   (gst_handdetect_get_type())
 #define GST_HANDDETECT(obj) \
@@ -84,7 +84,7 @@ struct _Gsthanddetect
    * scvImage - resized small cvImage,
    * and cvGray - cvt scvImage color into gray
    */
-  IplImage *cvImage, *scvImage, *cvGray;
+  IplImage *cvImage, *cvGray;
   CvHaarClassifierCascade *cvCascade;
   CvMemStorage *cvStorage;
 };

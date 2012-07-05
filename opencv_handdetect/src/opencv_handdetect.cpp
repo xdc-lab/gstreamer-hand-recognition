@@ -8,6 +8,11 @@
 //============================================================================
 
 #include <opencv2/opencv.hpp>
+
+#include <opencv/cv.h>
+#include <opencv/cxcore.h>
+#include <opencv/highgui.h>
+
 #include <iostream>
 #include <stdio.h>
 

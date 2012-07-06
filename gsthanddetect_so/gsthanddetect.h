@@ -53,6 +53,8 @@
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
+#include <opencv/cxcore.h>
+#include <opencv/highgui.h>
 #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
 #include <opencv2/objdetect/objdetect.hpp>
 #endif

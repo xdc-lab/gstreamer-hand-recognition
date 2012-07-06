@@ -1,8 +1,6 @@
 /*
- * GStreamer
- * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
- * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2012 andol <<user@hostname.org>>
+ * GStreamer hand gesture detect plugins
+ * Copyright (C) 2012 andol li <<andol@andol.info>>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -61,8 +59,9 @@
 #endif
 
 #include <gst/gst.h>
-#include "gstopencvutils.h"
 #include "gsthanddetect.h"
+/* for debug */
+#include "debug.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 #define GST_CAT_DEFAULT gst_handdetect_debug
@@ -286,53 +285,58 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 {
 	  Gsthanddetect *filter;
 	  CvSeq *hands;
+	  CvRect *r;
+	  GstStructure *s;
+	  GstMessage *m;
 	  int i;
 
 	  filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
-	  	  g_print("get filter->cvImage from buf OK!!!\n"); //debug info
+	  /* filter->cvImage = cvLoadImage("/home/javauser/workspace/pic.jpg", 0); */
+	  /* debug print*/
+	  g_print("!!!filter->cvImage->imageData OK\n");
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 
 	  if(filter->cvCascade){
 		  /* detect hands */
 		  hands = cvHaarDetectObjects (
-				  filter->cvGray,
+				  filter->cvImage,
 				  filter->cvCascade,
 				  filter->cvStorage,
 				  1.1,
 				  2,
-				  0,
-				  cvSize(24,24) //haar training picture size 24x24
+				  CV_HAAR_DO_CANNY_PRUNING,
+				  cvSize(24,24) /* haar training picture size 24x24 */
 				  #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
-				  , cvSize(320, 240)
+				  , cvSize(0, 0)
 				  #endif
 				  );
 
 		  /* if hands detected, get the buffer writable */
 		  if(filter->display && hands && hands->total > 0){
 			  buf = gst_buffer_make_writable(buf);
+			  /* debug print */
 			  g_print("!!!%d hands detected\n", (int)hands->total);
 		  }
 
 		  /* go through all hands detected */
+		  // Debug_Printf_FrameInfos();
 		  for(i = 0; i < (hands ? hands->total : 0); i++){
-			  g_print("!!!-%d\n", i);//debug info
 			  /* read a hand detect result */
-			  CvRect *r = (CvRect *) cvGetSeqElem(hands, i);
+			  r = (CvRect *) cvGetSeqElem(hands, i);
 
 			  /* define a structure to contain the result in message */
-			  GstStructure *s = gst_structure_new(
-					  "hand",
-					  "x", G_TYPE_UINT, r->x + r->width * 0.5,
-					  "y", G_TYPE_UINT, r->y + r->height * 0.5,
+			  s = gst_structure_new(
+					  "handdetect-event",
+					  "x", G_TYPE_UINT, (int)(r->x + r->width * 0.5),
+					  "y", G_TYPE_UINT, (int)(r->y + r->height * 0.5),
 					  "width", G_TYPE_UINT, r->width,
 					  "height", G_TYPE_UINT, r->height,
 					  NULL);
-
-			  /* set up new message element */
-			  GstMessage *m = gst_message_new_element(GST_OBJECT(filter), s);
-			  /* post the msg to GstBus */
+//			  /* set up new message element */
+			  m = gst_message_new_element(GST_OBJECT(filter), s);
+//			  /* post the msg to GstBus */
 			  gst_element_post_message(GST_ELEMENT(filter), m);
 
 			  /* if display, draw out the circle on detected hands */
@@ -343,22 +347,19 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  center.y = cvRound((r->y + r->height * 0.5));
 				  radius = cvRound((r->width + r->height) * 0.25);
 				  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
-				  g_print("!!!hand position:x- %d, y- %d\n", center.x, center.y); //debug info
+				  /* debug print */
+				  g_print("!!!hand position:x- %d, y- %d\n", center.x, center.y);
 			  }
 		  }
 	  }
-
 	  /* just push out the incoming buffer without touching it */
 	  return gst_pad_push (filter->srcpad, buf);
 }
 
 static void
 gst_handdetect_load_profile(Gsthanddetect *filter){
-	filter->cvCascade =
-			(CvHaarClassifierCascade *) cvLoad(filter->profile, 0, 0, 0);
-	if(! filter->cvCascade){
-		GST_WARNING("could not load haar classifier cascade: %s.", filter->profile);
-	}
+	filter->cvCascade = (CvHaarClassifierCascade *) cvLoad(filter->profile, 0, 0, 0);
+	if(! filter->cvCascade) GST_WARNING("could not load haar classifier cascade: %s.", filter->profile);
 }
 
 /* entry point to initialize the plug-in

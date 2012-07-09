@@ -267,8 +267,8 @@ gst_handdetect_set_caps (GstPad * pad, GstCaps * caps)
 	  gst_structure_get_int(structure, "width", &width);
 	  gst_structure_get_int(structure, "height", &height);
 
-	  filter->cvImage = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 3);
-	  filter->cvGray = cvCreateImage (cvSize(width, height), IPL_DEPTH_8U, 1);
+	  filter->cvImage = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 3);
+	  filter->cvGray = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 1);
 	  filter->cvStorage = cvCreateMemStorage (0);
 
 	  otherpad = (pad == filter->srcpad) ? filter->sinkpad : filter->srcpad;
@@ -291,10 +291,14 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  int i;
 
 	  filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
+	  /* get image data from gst buffer
+	   * have not tested if this data is captured correctly,
+	   * as the handdetect becomes much worse than that in opencv_handdetect project.
+	   * */
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
 	  /* filter->cvImage = cvLoadImage("/home/javauser/workspace/pic.jpg", 0); */
 	  /* debug print*/
-	  g_print("!!!filter->cvImage->imageData OK\n");
+//	  g_print("!!!filter->cvImage->imageData OK\n");
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 

@@ -3,13 +3,12 @@
  *
  *  Created on: 28 Jun 2012
  *  Author: andol li, andol@andol.info
- *  description: get videos from camera using gst
+ *  description: gsthanddetect plugin test application
  *
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale !
- * decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
+ * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale ! decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
  */
@@ -90,58 +89,46 @@ main(gint argc, gchar **argv){
 	gst_init(&argc, &argv);
 
 	//create elements
-	pipeline = gst_pipeline_new("video_player");
-	if(!pipeline) {
+	if(!(pipeline = gst_pipeline_new("video_player"))){
 		g_printerr("ERR: failed to init pipeline \n");
 		return 0;
 	}
-	v4l2src = gst_element_factory_make("v4l2src", "video_source");
-	if(!v4l2src) {
+	if(!(v4l2src = gst_element_factory_make("v4l2src", "video_source"))){
 		g_printerr("ERR: failed to init v4l2src \n");
 		return 0;
 	}
-	videoscale = gst_element_factory_make("videoscale", "video_scale");
-	if(!videoscale){
+	if(!(videoscale = gst_element_factory_make("videoscale", "video_scale"))){
 		g_printerr("ERR: failed to init videoscale \n");
 		return 0;
 	}
-	decodebin = gst_element_factory_make("decodebin2", "video_decodebin");
-	if(!decodebin){
+	if(!(decodebin = gst_element_factory_make("decodebin2", "video_decodebin"))){
 		g_printerr("ERR: failed to init decodebin \n");
 		return 0;
 	}
-	ffmpegcolorspace_in = gst_element_factory_make("ffmpegcolorspace", "video_ffmpegcolorsapce_in");
-	if(!ffmpegcolorspace_in){
+	if(!(ffmpegcolorspace_in = gst_element_factory_make("ffmpegcolorspace", "video_ffmpegcolorsapce_in"))){
 		g_printerr("ERR: failed to init ffmpegcolorspace_in \n");
 		return 0;
 	}
-	ffmpegcolorspace_out = gst_element_factory_make("ffmpegcolorspace", "video_ffmpegcolorsapce_out");
-	if(!ffmpegcolorspace_out){
+	if(!(ffmpegcolorspace_out = gst_element_factory_make("ffmpegcolorspace", "video_ffmpegcolorsapce_out"))){
 		g_printerr("ERR: failed to init ffmpegcolorspace_out \n");
 		return 0;
 	}
-	handdetect = gst_element_factory_make("handdetect", "video_handdetect");
-	if(!handdetect){
+	if(!(handdetect = gst_element_factory_make("handdetect", "video_handdetect"))){
 		g_printerr("ERR: failed to init handdetect \n");
 		return 0;
 	}
-	xvimagesink = gst_element_factory_make("xvimagesink", "video_xvimagesink");
-	if(!xvimagesink){
+	if(!(xvimagesink = gst_element_factory_make("xvimagesink", "video_xvimagesink"))){
 		g_printerr("ERR: failed to init xvimagesink \n");
 		return 0;
 	}
 	//create caps for video streams
-	caps = gst_caps_new_simple("video/x-raw-yuv",
-			"width", G_TYPE_INT, 320,
-			"height", G_TYPE_INT, 240,
-			"framerate", GST_TYPE_FRACTION, 25,
-			1, NULL);
+	caps = gst_caps_from_string("video/x-raw-yuv, width=320, height=240, framerate=(fraction)15/1");
 
 	//set video camera parameters
 	g_object_set(G_OBJECT(v4l2src), "device", video_device, NULL);
 	//set handdetect plugin's parameters
-	g_object_set(G_OBJECT(handdetect), "profile", "../fist.xml", NULL);
-	g_object_set(G_OBJECT(handdetect), "display", TRUE, NULL);
+//	g_object_set(G_OBJECT(handdetect), "profile", "../fist.xml", NULL);
+//	g_object_set(G_OBJECT(handdetect), "display", TRUE, NULL);
 
 	//add msg handler
 	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
@@ -167,10 +154,19 @@ main(gint argc, gchar **argv){
 	gst_caps_unref(caps);
 	g_signal_connect(decodebin, "pad-added", G_CALLBACK(on_pad_add), ffmpegcolorspace_in);
 
-	//if(!gst_element_link(v4l2src, videoscale)) g_printerr("ERR: gst_element_link 1 \n");
+//	gst_element_link_many(
+//			v4l2src,
+//			videoscale,
+//			decodebin,
+//			ffmpegcolorspace_in,
+//			handdetect,
+//			ffmpegcolorspace_out,
+//			xvimagesink,
+//			NULL);
+	if(!gst_element_link(v4l2src, videoscale)) g_printerr("ERR: gst_element_link 1 \n");
 	if(!gst_element_link(videoscale, decodebin)) g_printerr("ERR: gst_element_link 2 \n");
 	gst_element_link_pads(decodebin, "src", ffmpegcolorspace_in, "sink");
-//	if(!gst_element_link(decodebin, ffmpegcolorspace_in)) g_printerr("ERR: gst_element_link 3 \n");
+	if(!gst_element_link(decodebin, ffmpegcolorspace_in)) g_printerr("ERR: gst_element_link 3 \n");
 	if(!gst_element_link(ffmpegcolorspace_in, handdetect)) g_printerr("ERR: gst_element_link 4 \n");
 	if(!gst_element_link(handdetect, ffmpegcolorspace_out)) g_printerr("ERR: gst_element_link 5 \n");
 	if(!gst_element_link(ffmpegcolorspace_out, xvimagesink)) g_printerr("ERR: gst_element_link 6 \n");

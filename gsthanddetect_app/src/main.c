@@ -30,22 +30,25 @@ bus_call(GstBus		*bus,
 
 	switch (GST_MESSAGE_TYPE (msg)) {
 		case GST_MESSAGE_EOS:
-		  g_print ("End of stream\n");
-		  g_main_loop_quit (loop);
-		  break;
+			g_print ("End of stream\n");
+			g_main_loop_quit (loop);
+			break;
 
 		case GST_MESSAGE_ERROR: {
-		  gchar  *debug;
-		  GError *error;
+			gchar  *debug;
+			GError *error;
 
-		  gst_message_parse_error (msg, &error, &debug);
-		  g_free (debug);
+			gst_message_parse_error (msg, &error, &debug);
+			g_free (debug);
 
-		  g_printerr ("Error: %s\n", error->message);
-		  g_error_free (error);
+			g_printerr ("Error: %s\n", error->message);
+			g_error_free (error);
 
-		  g_main_loop_quit (loop);
-		  break;}
+			g_main_loop_quit (loop);
+			break; }
+		case 'handdetect-event':{
+			g_print("handdetect-event msg detected.\n");
+			break;	}
 		default:
 		  break;
 	}
@@ -130,7 +133,7 @@ main(gint argc, gchar **argv){
 //	g_object_set(G_OBJECT(handdetect), "profile", "../fist.xml", NULL);
 //	g_object_set(G_OBJECT(handdetect), "display", TRUE, NULL);
 
-	//add msg handler
+	//add msg handler to pipeline
 	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
 	gst_bus_add_watch(bus, bus_call, loop);
 	gst_object_unref(bus);

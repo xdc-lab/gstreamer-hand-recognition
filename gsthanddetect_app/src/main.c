@@ -3,15 +3,8 @@
  *
  *  Created on: 28 Jun 2012
  *  Author: andol li, andol@andol.info
- *  description: gsthanddetect plugin test application
+ *  description: gsthanddetect plugin test application - hand gestures to control media playing
  *
- * <refsect2>
- * <title>Example launch line</title>
- * |[
- * gst-launch autovideosrc ! ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" !
- * videoscale ! handdetect ! ffmpegcolorspace ! xvimagesink
- * ]|
- * </refsect2>
  */
 
 #include <gst/gst.h>
@@ -31,9 +24,10 @@ bus_call(GstBus		*bus,
 		GstMessage 	*msg,
 		gpointer 	data)
 {
-//	g_print("-msg src:%s, type:%s\n",
-//			gst_object_get_name(msg->src),
-//			gst_message_type_get_name(msg->type));
+	/*g_print("-msg src:%s, type:%s\n",
+	 *		gst_object_get_name(msg->src),
+	 *		gst_message_type_get_name(msg->type));
+	 */
 
 	GMainLoop *loop = (GMainLoop *) data;
 
@@ -55,13 +49,6 @@ bus_call(GstBus		*bus,
 			break; }
 		/* handdetect element msg processing */
 		case GST_MESSAGE_ELEMENT:{
-//			GstStructure *temp_structure = gst_message_get_structure(msg);
-//			if( temp_structure != NULL && strcmp(gst_structure_get_name(temp_structure), "detected_hand_info") == 0){
-//				g_print("-*message structure, field[0]: %d \n", (guint)gst_structure_get_value(temp_structure, "width") );
-//
-//				/* according to handdetect info to change pipeline states*/
-//				gst_element_set_state(pipeline, GST_STATE_PAUSED);
-//			}
 			const GstStructure *structure = msg->structure;
 			if(structure && strcmp(gst_structure_get_name(structure), "detected_hand_info") == 0){
 				/* print message type and structure name */
@@ -151,8 +138,8 @@ main(gint argc, gchar **argv){
 	//set video camera parameters
 	g_object_set(G_OBJECT(v4l2src), "device", video_device, NULL);
 	//set handdetect plugin's parameters
-//	g_object_set(G_OBJECT(handdetect), "profile", "../fist.xml", NULL);
-//	g_object_set(G_OBJECT(handdetect), "display", TRUE, NULL);
+	//g_object_set(G_OBJECT(handdetect), "profile", "../fist.xml", NULL);
+	//g_object_set(G_OBJECT(handdetect), "display", TRUE, NULL);
 
 	//add msg handler to pipeline
 	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
@@ -176,14 +163,14 @@ main(gint argc, gchar **argv){
 	}
 	gst_caps_unref(caps);
 
-//	if(!gst_element_link(v4l2src, videoscale)) g_printerr("ERR: gst_element_link 1 \n");
-	if(!gst_element_link(videoscale, ffmpegcolorspace_in)) g_printerr("ERR: gst_element_link 3 \n");
-	if(!gst_element_link(ffmpegcolorspace_in, handdetect)) g_printerr("ERR: gst_element_link 4 \n");
-	if(!gst_element_link(handdetect, ffmpegcolorspace_out)) g_printerr("ERR: gst_element_link 5 \n");
-	if(!gst_element_link(ffmpegcolorspace_out, xvimagesink)) g_printerr("ERR: gst_element_link 6 \n");
+	gst_element_link_many(videoscale,
+			ffmpegcolorspace_in,
+			handdetect,
+			ffmpegcolorspace_out,
+			xvimagesink,
+			NULL);
 
 	gst_element_set_state(pipeline, GST_STATE_PLAYING);
-
 	//main loop
 	g_main_loop_run(loop);
 

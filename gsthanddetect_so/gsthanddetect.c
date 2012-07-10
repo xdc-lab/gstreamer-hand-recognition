@@ -1,6 +1,6 @@
 /*
  * GStreamer hand gesture detect plugins
- * Copyright (C) 2012 andol li <<andol@andol.info>>
+ * Copyright (C) 2012 Andol Li <<andol@andol.info>>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -49,8 +49,8 @@
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch autovideosrc !  ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" ! videoscale !   handdetect  ! ffmpegcolorspace ! xvimagesink
- * ]|
+ * gst-launch autovideosrc ! ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" ! \
+   videoscale ! handdetect ! ffmpegcolorspace ! xvimagesink * ]|
  * </refsect2>
  */
 

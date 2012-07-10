@@ -49,7 +49,7 @@
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch v4l2src ! video/x-raw-yuv, width=320, height=240 ! videoscale ! decodebin ! ffmpegcolorspace ! handdetect display=TRUE ! ffmpegcolorspace ! xvimagesink
+ * gst-launch autovideosrc !  ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" ! videoscale !   handdetect  ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
  */
@@ -59,6 +59,7 @@
 #endif
 
 #include <gst/gst.h>
+#include <gst/video/video.h>
 #include "gsthanddetect.h"
 /* for debug */
 #include "debug.h"
@@ -89,13 +90,13 @@ enum
 static GstStaticPadTemplate sink_factory = GST_STATIC_PAD_TEMPLATE ("sink",
 	GST_PAD_SINK,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw-yuv")
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_RGB)
     );
 
 static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("video/x-raw-yuv")
+    GST_STATIC_CAPS (GST_VIDEO_CAPS_RGB)
     );
 
 GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
@@ -187,8 +188,8 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 static void
 gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 {
-	  g_print("!!!plugin init OK\n");
-	  g_print("!!!%s\n", HAAR_FILE);
+	  g_print("---plugin init OK\n");
+	  g_print("---%s\n", HAAR_FILE);
 
 	  filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
 	  gst_pad_set_setcaps_function (
@@ -298,7 +299,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
 	  /* filter->cvImage = cvLoadImage("/home/javauser/workspace/pic.jpg", 0); */
 	  /* debug print*/
-//	  g_print("!!!filter->cvImage->imageData OK\n");
+//	  g_print("---filter->cvImage->imageData OK\n");
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 
@@ -321,7 +322,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 		  if(filter->display && hands && hands->total > 0){
 			  buf = gst_buffer_make_writable(buf);
 			  /* debug print */
-			  g_print("!!!%d hands detected\n", (int)hands->total);
+			  g_print("---%d hands detected\n", (int)hands->total);
 		  }
 
 		  /* go through all hands detected */
@@ -332,7 +333,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 
 			  /* define a structure to contain the result in message */
 			  s = gst_structure_new(
-					  "handdetect-event",
+					  "detected_hand_info",
 					  "x", G_TYPE_UINT, (int)(r->x + r->width * 0.5),
 					  "y", G_TYPE_UINT, (int)(r->y + r->height * 0.5),
 					  "width", G_TYPE_UINT, r->width,
@@ -350,9 +351,9 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  center.x = cvRound((r->x + r->width * 0.5));
 				  center.y = cvRound((r->y + r->height * 0.5));
 				  radius = cvRound((r->width + r->height) * 0.25);
-				  cvCircle(filter->cvImage, center, radius, CV_RGB(255, 32, 32), 3, 8, 0);
+				  cvCircle(filter->cvImage, center, radius, CV_RGB(0, 0, 200), 1, 8, 0);
 				  /* debug print */
-				  g_print("!!!hand position:x- %d, y- %d\n", center.x, center.y);
+				  g_print("---hand position:x- %d, y- %d\n", center.x, center.y);
 			  }
 		  }
 	  }

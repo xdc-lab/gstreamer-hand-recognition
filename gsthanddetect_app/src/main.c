@@ -8,7 +8,7 @@
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch autovideosrc ! ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" ! \
+ * gst-launch autovideosrc ! ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" !
  * videoscale ! handdetect ! ffmpegcolorspace ! xvimagesink
  * ]|
  * </refsect2>
@@ -16,6 +16,10 @@
 
 #include <gst/gst.h>
 #include <glib.h>
+#include <glib/gprintf.h>
+#include <glib-object.h>
+#include <stdlib.h>
+#include <string.h>
 
 //elements
 GstElement	*pipeline, *v4l2src, *videoscale,
@@ -27,9 +31,9 @@ bus_call(GstBus		*bus,
 		GstMessage 	*msg,
 		gpointer 	data)
 {
-	g_print("-msg src:%s, type:%s\n",
-			gst_object_get_name(msg->src),
-			gst_message_type_get_name(msg->type));
+//	g_print("-msg src:%s, type:%s\n",
+//			gst_object_get_name(msg->src),
+//			gst_message_type_get_name(msg->type));
 
 	GMainLoop *loop = (GMainLoop *) data;
 
@@ -51,11 +55,44 @@ bus_call(GstBus		*bus,
 			break; }
 		/* handdetect element msg processing */
 		case GST_MESSAGE_ELEMENT:{
-			if((gchar )gst_object_get_name(msg->src) == "video_handdetect")
-				g_print("-video_handdetect msg detected\n");
+//			GstStructure *temp_structure = gst_message_get_structure(msg);
+//			if( temp_structure != NULL && strcmp(gst_structure_get_name(temp_structure), "detected_hand_info") == 0){
+//				g_print("-*message structure, field[0]: %d \n", (guint)gst_structure_get_value(temp_structure, "width") );
+//
+//				/* according to handdetect info to change pipeline states*/
+//				gst_element_set_state(pipeline, GST_STATE_PAUSED);
+//			}
+			const GstStructure *structure = msg->structure;
+			if(structure && strcmp(gst_structure_get_name(structure), "detected_hand_info") == 0){
+				/* print message type and structure name */
+				g_print("%s{%s}\n",	gst_message_type_get_name(msg->type), gst_structure_get_name(structure));
+				/* read/print msg structure names/values */
+				int i;
+				for(i = 0; i < gst_structure_n_fields(structure); i++){
+					const gchar *name = gst_structure_nth_field_name(structure, i);
+					GType type = gst_structure_get_field_type(structure, name);
+					const GValue *value = gst_structure_get_value(structure, name);
+					g_print("%s[%s]{%d}\n", name, g_type_name(type), g_value_get_uint(value));
+				}
+				g_print("\n");
+
+				/* manage pipeline's media playing state */
+				if(GST_STATE(pipeline) == GST_STATE_PLAYING)
+					gst_element_set_state(pipeline, GST_STATE_PAUSED);
+				else
+					gst_element_set_state(pipeline, GST_STATE_PLAYING);
+			}
+			break;	}
+		case GST_MESSAGE_STATE_CHANGED:{
+			/* print pipeline's state changes */
+			GstState old_state, new_state;
+			gst_message_parse_state_changed(msg, &old_state, &new_state, NULL);
+			g_print ("[%s]: %s -> %s\n", GST_OBJECT_NAME (msg->src),
+					gst_element_state_get_name (old_state),
+					gst_element_state_get_name (new_state));
 			break;	}
 		default:
-		  break;
+			break;
 	}
 
 	return TRUE;

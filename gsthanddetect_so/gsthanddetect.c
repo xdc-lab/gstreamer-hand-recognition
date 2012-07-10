@@ -299,7 +299,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
 	  /* filter->cvImage = cvLoadImage("/home/javauser/workspace/pic.jpg", 0); */
 	  /* debug print*/
-//	  g_print("---filter->cvImage->imageData OK\n");
+	  /* g_print("---filter->cvImage->imageData OK\n"); */
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 
@@ -326,7 +326,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 		  }
 
 		  /* go through all hands detected */
-		  // Debug_Printf_FrameInfos();
+		  /* Debug_Printf_FrameInfos(); */
 		  for(i = 0; i < (hands ? hands->total : 0); i++){
 			  /* read a hand detect result */
 			  r = (CvRect *) cvGetSeqElem(hands, i);
@@ -339,9 +339,9 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 					  "width", G_TYPE_UINT, r->width,
 					  "height", G_TYPE_UINT, r->height,
 					  NULL);
-//			  /* set up new message element */
+			  /* set up new message element */
 			  m = gst_message_new_element(GST_OBJECT(filter), s);
-//			  /* post the msg to GstBus */
+			  /* post the msg to GstBus */
 			  gst_element_post_message(GST_ELEMENT(filter), m);
 
 			  /* if display, draw out the circle on detected hands */
@@ -353,7 +353,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  radius = cvRound((r->width + r->height) * 0.25);
 				  cvCircle(filter->cvImage, center, radius, CV_RGB(0, 0, 200), 1, 8, 0);
 				  /* debug print */
-				  g_print("---hand position:x- %d, y- %d\n", center.x, center.y);
+				  /* g_print("---hand position:x[%d] y[%d]\n", center.x, center.y); */
 			  }
 		  }
 	  }

@@ -107,8 +107,8 @@ static void gst_handdetect_get_property (GObject * object, guint prop_id, GValue
 
 static gboolean gst_handdetect_set_caps (GstPad * pad, GstCaps * caps);
 static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
-static gboolean gst_handdetect_sink_event_handler(GstPad *pad, GstEvent *event);
-static gboolean gst_handdetect_src_event_handler(GstPad *pad, GstEvent *event);
+static gboolean gst_handdetect_sink_handler(GstPad *pad, GstEvent *event);
+static gboolean gst_handdetect_src_handler(GstPad *pad, GstEvent *event);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
@@ -204,11 +204,17 @@ gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 	  gst_pad_set_chain_function (
 			  filter->sinkpad,
 			  GST_DEBUG_FUNCPTR(gst_handdetect_chain));
+	  gst_pad_set_event_function(
+			  filter->sinkpad,
+			  GST_DEBUG_FUNCPTR(gst_handdetect_sink_handler));
 
 	  filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
 	  gst_pad_set_getcaps_function (
 			  filter->srcpad,
 			  GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
+	  gst_pad_set_event_function(
+			  filter->srcpad,
+			  GST_DEBUG_FUNCPTR(gst_handdetect_src_handler));
 
 	  gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 	  gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
@@ -446,4 +452,37 @@ GST_PLUGIN_DEFINE (
     "http://gstreamer.net/"
 )
 
+static gboolean
+gst_handdetect_sink_handler(GstPad *pad, GstEvent *event)
+{
+	Gsthanddetect *filter;
+	gboolean ret;
 
+	filter = GST_HANDDETECT(gst_pad_get_parent (pad));
+
+	switch (GST_EVENT_TYPE (event)) {
+	case GST_EVENT_NEWSEGMENT:
+	  ret = gst_pad_push_event (filter->srcpad, event);
+	  break;
+	case GST_EVENT_EOS:
+//	  gst_handdetect_stop_processing (filter);
+	  ret = gst_pad_push_event (filter->srcpad, event);
+	  break;
+	case GST_EVENT_FLUSH_STOP:
+//	  gst_handdetect_clear_temporary_buffers (filter);
+	  ret = gst_pad_push_event (filter->srcpad, event);
+	  break;
+	default:
+	  ret = gst_pad_event_default (pad, event);
+	  break;
+	  }
+
+	  gst_object_unref (filter);
+	  return ret;
+}
+
+static gboolean
+gst_handdetect_src_handler(GstPad *pad, GstEvent *event)
+{
+	return TRUE;
+}

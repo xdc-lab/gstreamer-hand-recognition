@@ -50,7 +50,8 @@
  * <title>Example launch line</title>
  * |[
  * gst-launch autovideosrc ! ffmpegcolorspace ! "video/x-raw-rgb, width=320, height=240" ! \
-   videoscale ! handdetect ! ffmpegcolorspace ! xvimagesink * ]|
+   videoscale ! handdetect ! ffmpegcolorspace ! xvimagesink
+ * ]|
  * </refsect2>
  */
 
@@ -318,46 +319,78 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 				  #endif
 				  );
 
-		  /* if hands detected, get the buffer writable */
+		  /* if hands detected, set the buffer writable */
 		  if(filter->display && hands && hands->total > 0){
 			  buf = gst_buffer_make_writable(buf);
 			  /* debug print */
 			  g_print("---%d hands detected\n", (int)hands->total);
 		  }
 
-		  /* go through all hands detected */
-		  /* Debug_Printf_FrameInfos(); */
-		  for(i = 0; i < (hands ? hands->total : 0); i++){
-			  /* read a hand detect result */
-			  r = (CvRect *) cvGetSeqElem(hands, i);
+		  /* go through all hands detected to get the best hand
+		   * prev_r => previous hand
+		   * best_r => best hand in this frame
+		   */
+		  if(hands && hands->total > 0){
+			  /* init distance for comparisons, 400 is the maximum distance in 320x240 frame*/
+			  int min_distance = 400;
+			  /* init filter->prev_r */
+			  CvRect temp_r = cvRect(0,0,0,0);
+			  if(filter->prev_r == NULL) filter->prev_r = &temp_r;
 
-			  /* define a structure to contain the result in message */
+			  /* get the best hand */
+			  for(i = 0; i< (hands ? hands->total : 0); i++){
+				  r = (CvRect *) cvGetSeqElem(hands, i);
+				  int distance = (int) sqrt(pow((r->x - filter->prev_r->x), 2) + pow((r->y - filter->prev_r->y), 2));
+				  if(distance <= min_distance){
+					  min_distance = distance;
+					  filter->best_r = r;
+
+					  /* debug print */
+					  g_print("best_r x:%d, y:%d, w:%d, h:%d\n",
+							  filter->best_r->x,
+							  filter->best_r->y,
+							  filter->best_r->width,
+							  filter->best_r->height);
+				  }
+			  }
+
+			  /* save best_r as prev_r for next frame */
+			  filter->prev_r = (CvRect *)filter->best_r;
+
+			  /* processing the best hand in the frame
+			   * best_r => the best hand
+			   */
+			  /* define the structure for message post */
+Debug_Printf_FrameInfos();
 			  s = gst_structure_new(
 					  "detected_hand_info",
-					  "x", G_TYPE_UINT, (int)(r->x + r->width * 0.5),
-					  "y", G_TYPE_UINT, (int)(r->y + r->height * 0.5),
-					  "width", G_TYPE_UINT, r->width,
-					  "height", G_TYPE_UINT, r->height,
+					  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
+					  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
+					  "width", G_TYPE_UINT, (uint)filter->best_r->width,
+					  "height", G_TYPE_UINT, (uint)filter->best_r->height,
 					  NULL);
-			  /* set up new message element */
+			  /* init message element */
 			  m = gst_message_new_element(GST_OBJECT(filter), s);
-			  /* post the msg to GstBus */
+			  /* send the message to GstBus */
 			  gst_element_post_message(GST_ELEMENT(filter), m);
 
-			  /* if display, draw out the circle on detected hands */
+			  /* check the filter->display,
+			   * if TRUE then display the circle marker in the frame
+			   */
 			  if(filter->display){
 				  CvPoint center;
 				  int radius;
-				  center.x = cvRound((r->x + r->width * 0.5));
-				  center.y = cvRound((r->y + r->height * 0.5));
-				  radius = cvRound((r->width + r->height) * 0.25);
+				  center.x = cvRound((filter->best_r->x + filter->best_r->width * 0.5));
+				  center.y = cvRound((filter->best_r->y + filter->best_r->height * 0.5));
+				  radius = cvRound((filter->best_r->width + filter->best_r->height) * 0.25);
 				  cvCircle(filter->cvImage, center, radius, CV_RGB(0, 0, 200), 1, 8, 0);
-				  /* debug print */
-				  /* g_print("---hand position:x[%d] y[%d]\n", center.x, center.y); */
 			  }
 		  }
 	  }
-	  /* just push out the incoming buffer without touching it */
+
+	  /*
+	   * just push out the incoming buffer without touching it
+	   */
 	  return gst_pad_push (filter->srcpad, buf);
 }
 

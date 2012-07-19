@@ -50,13 +50,14 @@
 #define VERSION "0.10.36" /* for GST_PLUGIN_DEFINE use */
 #endif
 
+#include <math.h>
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include <opencv/highgui.h>
 #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
-#include <opencv2/objdetect/objdetect.hpp>
+	#include <opencv2/objdetect/objdetect.hpp>
 #endif
 
 G_BEGIN_DECLS
@@ -89,6 +90,7 @@ struct _Gsthanddetect
   IplImage *cvImage, *cvGray;
   CvHaarClassifierCascade *cvCascade;
   CvMemStorage *cvStorage;
+  CvRect *prev_r, *best_r;
 };
 
 struct _GsthanddetectClass

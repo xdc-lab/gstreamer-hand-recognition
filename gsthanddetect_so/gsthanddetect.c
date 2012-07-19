@@ -361,7 +361,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 			   * best_r => the best hand
 			   */
 			  /* define the structure for message post */
-Debug_Printf_FrameInfos();
+			  Debug_Printf_FrameInfos();
 			  s = gst_structure_new(
 					  "detected_hand_info",
 					  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
@@ -448,3 +448,78 @@ GST_PLUGIN_DEFINE (
     "GStreamer",
     "http://gstreamer.net/"
 )
+
+static gboolean
+gst_handdetect_sink_event(GstPad * pad, GstEvent * event)
+{
+	Gsthanddetect *handdetect = GST_HANDDETECT(gst_pad_get_parent(pad));
+	gboolean ret = FALSE;
+
+	GST_DEBUG_OBJECT (pad, "Got %s event\n", GST_EVENT_TYPE_NAME (event));
+
+	switch (GST_EVENT_TYPE (event)) {
+		case GST_EVENT_NEWSEGMENT:{
+			gboolean update;
+			gdouble rate;
+			gdouble applied_rate;
+			GstFormat format;
+			gint64 start, stop, position;
+
+			gst_event_parse_new_segment_full (event, &update, &rate, &applied_rate, &format, &start, &stop, &position);
+
+			/* not support non time NEWSEGMENT events */
+			if (format != GST_FORMAT_TIME) {
+				gst_event_unref (event);
+				event = NULL;
+				break;
+			}
+
+			gst_segment_set_newsegment_full (&ogg_pad->segment, update, rate,
+			  applied_rate, format, start, stop, position);
+
+			break;
+		}
+		case GST_EVENT_FLUSH_STOP:{
+			gst_segment_init (&ogg_pad->segment, GST_FORMAT_TIME);
+			break;
+		}
+		case GST_EVENT_TAG:{
+			GstTagList *tags;
+
+			gst_event_parse_tag (event, &tags);
+			tags = gst_tag_list_merge (ogg_pad->tags, tags, GST_TAG_MERGE_APPEND);
+			if (ogg_pad->tags)
+			gst_tag_list_free (ogg_pad->tags);
+			ogg_pad->tags = tags;
+
+			GST_DEBUG_OBJECT (ogg_mux, "Got tags %" GST_PTR_FORMAT, ogg_pad->tags);
+			break;
+		}
+		default:
+			break;
+	}
+
+	/* now GstCollectPads can take care of the rest, e.g. EOS */
+	if (event != NULL)
+	ret = ogg_pad->collect_event (pad, event);
+
+	gst_object_unref (ogg_mux);
+	return ret;
+}
+
+static gboolean
+gst_handdetect_src_event(GstPad * pad, GstEvent * event)
+{
+	GstEventType type;
+	type = event ? GST_EVENT_TYPE(event) : GST_EVENT_UNKNOWN;
+
+	switch (type) {
+	    case GST_EVENT_SEEK:
+	      /* disable seeking for now */
+	      return FALSE;
+	    default:
+	      break;
+	}
+
+	return gst_pad_event_default (pad, event);;
+}

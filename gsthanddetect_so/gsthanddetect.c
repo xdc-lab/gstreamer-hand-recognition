@@ -70,6 +70,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 
 /* define the dir of haar file for hand detect */
 #define HAAR_FILE "/usr/local/share/opencv/haarcascades/fist.xml"
+#define HAAR_FILE_PALM "/usr/local/share/opencv/haarcascades/palm.xml"
 
 /* Filter signals and args */
 enum
@@ -82,7 +83,8 @@ enum
 {
 	PROP_0,
 	PROP_DISPLAY,
-	PROP_PROFILE
+	PROP_PROFILE,
+	PROP_PROFILE_PALM
 };
 
 /* the capabilities of the inputs and outputs.
@@ -118,14 +120,10 @@ gst_handdetect_finalise(GObject *obj)
 {
 	Gsthanddetect *filter = GST_HANDDETECT (obj);
 
-	if (filter->cvImage) {
-	    cvReleaseImage (&filter->cvImage);
-	  }
-	if(filter->cvGray) {
-	    cvReleaseImage (&filter->cvGray);
-	}
-
+	if(filter->cvImage) cvReleaseImage (&filter->cvImage);
+	if(filter->cvGray) cvReleaseImage (&filter->cvGray);
 	g_free (filter->profile);
+	g_free(filter->profile_palm);
 	G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
@@ -138,8 +136,8 @@ gst_handdetect_base_init (gpointer gclass)
 	gst_element_class_set_details_simple(element_class,
 			"handdetect",
 			"Filter/Effect/Video",
-			"Performs hand detection on videos and images, providing detected positions via bus messages, and use the messages for media operation",
-			"andol li <<andol@andol.info>>");
+			"detects hand gestures to support natural gesture-based media operations",
+			"Andol Li <<andol@andol.info>>");
 
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&src_factory));
 	gst_element_class_add_pad_template (element_class, gst_static_pad_template_get (&sink_factory));
@@ -166,19 +164,28 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 			g_param_spec_boolean (
 				  "display",
 				  "Display",
-				  "Sets whether the detected hands should be highlighted in the output",
+				  "Whether the detected hands are highlighted in output frame",
 				  TRUE,
 				  G_PARAM_READWRITE)
 			);
-
 	g_object_class_install_property (
 			gobject_class,
 			PROP_PROFILE,
 			g_param_spec_string (
 					"profile",
 					"Profile",
-					"Location of Haar cascade file to use for hand detection",
+					"Location of Haar cascade file (fist gesture)",
 					HAAR_FILE,
+					G_PARAM_READWRITE)
+			);
+	g_object_class_install_property (
+			gobject_class,
+			PROP_PROFILE_PALM,
+			g_param_spec_string (
+					"profile_palm",
+					"Profile_palm",
+					"Location of Haar cascade file (palm gesture)",
+					HAAR_FILE_PALM,
 					G_PARAM_READWRITE)
 			);
 }
@@ -192,7 +199,7 @@ static void
 gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 {
 	  g_print("---plugin init OK\n");
-	  g_print("---%s\n", HAAR_FILE);
+	  g_print("---%s\n---%s\n", HAAR_FILE, HAAR_FILE_PALM);
 
 	  filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
 	  gst_pad_set_setcaps_function (
@@ -204,22 +211,17 @@ gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 	  gst_pad_set_chain_function (
 			  filter->sinkpad,
 			  GST_DEBUG_FUNCPTR(gst_handdetect_chain));
-	  gst_pad_set_event_function(
-			  filter->sinkpad,
-			  GST_DEBUG_FUNCPTR(gst_handdetect_sink_handler));
 
 	  filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
 	  gst_pad_set_getcaps_function (
 			  filter->srcpad,
 			  GST_DEBUG_FUNCPTR(gst_pad_proxy_getcaps));
-	  gst_pad_set_event_function(
-			  filter->srcpad,
-			  GST_DEBUG_FUNCPTR(gst_handdetect_src_handler));
 
 	  gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
 	  gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
 
 	  filter->profile = g_strdup(HAAR_FILE);
+	  filter->profile_palm = g_strdup(HAAR_FILE_PALM);
 	  filter->display = TRUE;
 	  gst_handdetect_load_profile (filter);
 }
@@ -230,6 +232,11 @@ gst_handdetect_set_property (GObject * object, guint prop_id, const GValue * val
 	  Gsthanddetect *filter = GST_HANDDETECT (object);
 
 	  switch (prop_id) {
+		  case PROP_PROFILE_PALM:
+			g_free(filter->profile_palm);
+			filter->profile_palm = g_value_dup_string(value);
+			gst_handdetect_load_profile(filter);
+			break;
 		  case PROP_PROFILE:
 			g_free (filter->profile);
 			filter->profile = g_value_dup_string (value);
@@ -250,6 +257,9 @@ gst_handdetect_get_property (GObject * object, guint prop_id, GValue * value, GP
 	  Gsthanddetect *filter = GST_HANDDETECT (object);
 
 	  switch (prop_id) {
+	  	  case PROP_PROFILE_PALM:
+			g_value_set_string(value, filter->profile_palm);
+			break;
 		  case PROP_PROFILE:
 			g_value_set_string (value, filter->profile);
 			break;
@@ -280,6 +290,7 @@ gst_handdetect_set_caps (GstPad * pad, GstCaps * caps)
 	  filter->cvImage = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 3);
 	  filter->cvGray = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 1);
 	  filter->cvStorage = cvCreateMemStorage (0);
+	  filter->cvStorage_palm = cvCreateMemStorage(0);
 
 	  otherpad = (pad == filter->srcpad) ? filter->sinkpad : filter->srcpad;
 	  gst_object_unref (filter);
@@ -312,6 +323,82 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 
+	  /* ------detect palm gesture and send events------ */
+//	  if(filter->cvCascade_palm){
+//		  /* palm detect */
+//		  CvSeq *palms = cvHaarDetectObjects(
+//				  filter->cvImage,
+//				  filter->cvCascade_palm,
+//				  filter->cvStorage_palm,
+//				  1.1,
+//				  2,
+//				  CV_HAAR_DO_CANNY_PRUNING,
+//				  cvSize(24,24) /* haar training picture size 24x24 */
+//				  #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
+//				  , cvSize(0, 0)
+//				  #endif
+//				  );
+//
+//		  /* if palms detected, set the buffer writable */
+//		  if(filter->display && palms && palms->total > 0){
+//			  buf = gst_buffer_make_writable(buf);
+//			  /* debug print */
+//			  g_print("---%d palms detected\n", (int)palms->total);
+//		  }
+//
+//		  /* go through all detected palms and get the best one */
+//		  if(palms && palms->total > 0){
+//			  int min_distance = 400;
+//			  /* init filter->prev_r */
+//			  CvRect temp_r = cvRect(0,0,0,0);
+//			  if(filter->prev_r == NULL) filter->prev_r = &temp_r;
+//			  /* select the best palm */
+//			  for(i = 0; i< (palms ? palms->total : 0); i++){
+//				  r = (CvRect *) cvGetSeqElem(palms, i);
+//				  int distance = (int) sqrt(pow((r->x - filter->prev_r->x), 2) + pow((r->y - filter->prev_r->y), 2));
+//				  if(distance <= min_distance){
+//					  min_distance = distance;
+//					  filter->best_r = r; }
+//			  }
+//
+//
+//			  /* save best_r as prev_r for next frame */
+//			  filter->prev_r = (CvRect *)filter->best_r;
+//
+//			  /* debug function - defined in debug.h*/
+//			  Debug_Printf_FrameInfos();
+//
+//			  /* init structure for msg */
+//			  s = gst_structure_new(
+//								  "detected_hand_info",
+//								  "gesture", G_TYPE_CHAR, "palm",
+//								  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
+//								  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
+//								  "width", G_TYPE_UINT, (uint)filter->best_r->width,
+//								  "height", G_TYPE_UINT, (uint)filter->best_r->height,
+//								  NULL);
+//
+//			  /* init message element */
+//			  m = gst_message_new_element(GST_OBJECT(filter), s);
+//
+//			  /* send the message to GstBus */
+//			  gst_element_post_message(GST_ELEMENT(filter), m);
+//
+//			  /* check the filter->display,
+//			   * if TRUE then display the circle marker in the frame
+//			   */
+//			  if(filter->display){
+//				  CvPoint center;
+//				  int radius;
+//				  center.x = cvRound((filter->best_r->x + filter->best_r->width * 0.5));
+//				  center.y = cvRound((filter->best_r->y + filter->best_r->height * 0.5));
+//				  radius = cvRound((filter->best_r->width + filter->best_r->height) * 0.25);
+//				  cvCircle(filter->cvImage, center, radius, CV_RGB(200, 0, 0), 1, 8, 0);
+//			  }
+//		  }
+//	  }
+
+	  /* ------detect fist gesture and send events------ */
 	  if(filter->cvCascade){
 		  /* detect hands */
 		  hands = cvHaarDetectObjects (
@@ -358,15 +445,13 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 			  /* save best_r as prev_r for next frame */
 			  filter->prev_r = (CvRect *)filter->best_r;
 
-			  /* processing the best hand in the frame
-			   * best_r => the best hand
-			   */
 			  /* debug function - defined in debug.h*/
 			  Debug_Printf_FrameInfos();
+
 			  /* define the structure for message post */
 			  s = gst_structure_new(
 					  "detected_hand_info",
-					  "gesture", G_TYPE_CHAR, "fist",
+					  "gesture", G_TYPE_STRING, "fist",
 					  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
 					  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
 					  "width", G_TYPE_UINT, (uint)filter->best_r->width,
@@ -400,7 +485,9 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 static void
 gst_handdetect_load_profile(Gsthanddetect *filter){
 	filter->cvCascade = (CvHaarClassifierCascade *) cvLoad(filter->profile, 0, 0, 0);
-	if(! filter->cvCascade) GST_WARNING("could not load haar classifier cascade: %s.", filter->profile);
+	filter->cvCascade_palm = (CvHaarClassifierCascade *) cvLoad(filter->profile_palm, 0, 0, 0);
+	if(!filter->cvCascade) GST_WARNING("could not load haar classifier cascade: %s.", filter->profile);
+	if(!filter->cvCascade_palm) GST_WARNING("WARNING: could not load haar classifier cascade: %s.", filter->profile_palm);
 }
 
 /* entry point to initialize the plug-in
@@ -418,7 +505,7 @@ handdetect_init (GstPlugin * handdetect)
 			  gst_handdetect_debug,
 			  "handdetect",
 			  0,
-			  "performs hand detect on videos and images, providing detected positions via bus messages for media operation.");
+			  "detects hand gestures (fist & palm) to support natural-gesture -based media operation.");
 
 	  return gst_element_register (
 			  handdetect,
@@ -451,38 +538,3 @@ GST_PLUGIN_DEFINE (
     "GStreamer",
     "http://gstreamer.net/"
 )
-
-static gboolean
-gst_handdetect_sink_handler(GstPad *pad, GstEvent *event)
-{
-	Gsthanddetect *filter;
-	gboolean ret;
-
-	filter = GST_HANDDETECT(gst_pad_get_parent (pad));
-
-	switch (GST_EVENT_TYPE (event)) {
-	case GST_EVENT_NEWSEGMENT:
-	  ret = gst_pad_push_event (filter->srcpad, event);
-	  break;
-	case GST_EVENT_EOS:
-//	  gst_handdetect_stop_processing (filter);
-	  ret = gst_pad_push_event (filter->srcpad, event);
-	  break;
-	case GST_EVENT_FLUSH_STOP:
-//	  gst_handdetect_clear_temporary_buffers (filter);
-	  ret = gst_pad_push_event (filter->srcpad, event);
-	  break;
-	default:
-	  ret = gst_pad_event_default (pad, event);
-	  break;
-	  }
-
-	  gst_object_unref (filter);
-	  return ret;
-}
-
-static gboolean
-gst_handdetect_src_handler(GstPad *pad, GstEvent *event)
-{
-	return TRUE;
-}

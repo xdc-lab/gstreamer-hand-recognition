@@ -80,7 +80,7 @@ struct _Gsthanddetect
   GstElement element;
   GstPad *sinkpad, *srcpad;
   gboolean display;
-  gchar *profile;
+  gchar *profile, *profile_palm;
 
   /* opencv variables
    * cvImage - image from video cam,
@@ -88,8 +88,8 @@ struct _Gsthanddetect
    * and cvGray - cvt scvImage color into gray
    */
   IplImage *cvImage, *cvGray;
-  CvHaarClassifierCascade *cvCascade;
-  CvMemStorage *cvStorage;
+  CvHaarClassifierCascade *cvCascade, *cvCascade_palm;
+  CvMemStorage *cvStorage, cvStorage_palm;
   CvRect *prev_r, *best_r;
 };
 

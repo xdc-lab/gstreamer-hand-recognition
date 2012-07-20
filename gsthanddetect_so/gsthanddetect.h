@@ -89,7 +89,7 @@ struct _Gsthanddetect
    */
   IplImage *cvImage, *cvGray;
   CvHaarClassifierCascade *cvCascade, *cvCascade_palm;
-  CvMemStorage *cvStorage, cvStorage_palm;
+  CvMemStorage *cvStorage, *cvStorage_palm;
   CvRect *prev_r, *best_r;
 };
 

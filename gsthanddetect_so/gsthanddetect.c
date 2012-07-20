@@ -123,6 +123,7 @@ gst_handdetect_finalise(GObject *obj)
 	if(filter->cvImage) cvReleaseImage (&filter->cvImage);
 	if(filter->cvGray) cvReleaseImage (&filter->cvGray);
 	g_free (filter->profile);
+	g_free(filter->profile_palm);
 	G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
@@ -231,6 +232,11 @@ gst_handdetect_set_property (GObject * object, guint prop_id, const GValue * val
 	  Gsthanddetect *filter = GST_HANDDETECT (object);
 
 	  switch (prop_id) {
+		  case PROP_PROFILE_PALM:
+			g_free(filter->profile_palm);
+			filter->profile_palm = g_value_dup_string(value);
+			gst_handdetect_load_profile(filter);
+			break;
 		  case PROP_PROFILE:
 			g_free (filter->profile);
 			filter->profile = g_value_dup_string (value);
@@ -251,6 +257,9 @@ gst_handdetect_get_property (GObject * object, guint prop_id, GValue * value, GP
 	  Gsthanddetect *filter = GST_HANDDETECT (object);
 
 	  switch (prop_id) {
+	  	  case PROP_PROFILE_PALM:
+			g_value_set_string(value, filter->profile_palm);
+			break;
 		  case PROP_PROFILE:
 			g_value_set_string (value, filter->profile);
 			break;
@@ -281,6 +290,7 @@ gst_handdetect_set_caps (GstPad * pad, GstCaps * caps)
 	  filter->cvImage = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 3);
 	  filter->cvGray = cvCreateImage (cvSize(320, 240), IPL_DEPTH_8U, 1);
 	  filter->cvStorage = cvCreateMemStorage (0);
+	  filter->cvStorage_palm = cvCreateMemStorage(0);
 
 	  otherpad = (pad == filter->srcpad) ? filter->sinkpad : filter->srcpad;
 	  gst_object_unref (filter);
@@ -313,13 +323,13 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 	  cvCvtColor(filter->cvImage, filter->cvGray, CV_RGB2GRAY);
 	  cvClearMemStorage (filter->cvStorage);
 
-//	  /* TO DO: detect palm gesture and send events */
+	  /* ------detect palm gesture and send events------ */
 //	  if(filter->cvCascade_palm){
 //		  /* palm detect */
 //		  CvSeq *palms = cvHaarDetectObjects(
-//				  filter.cvImage,
-//				  filter.cvCascade_palm,
-//				  filter.cvStorage_palm,
+//				  filter->cvImage,
+//				  filter->cvCascade_palm,
+//				  filter->cvStorage_palm,
 //				  1.1,
 //				  2,
 //				  CV_HAAR_DO_CANNY_PRUNING,
@@ -350,31 +360,45 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 //					  min_distance = distance;
 //					  filter->best_r = r; }
 //			  }
+//
+//
+//			  /* save best_r as prev_r for next frame */
+//			  filter->prev_r = (CvRect *)filter->best_r;
+//
+//			  /* debug function - defined in debug.h*/
+//			  Debug_Printf_FrameInfos();
+//
+//			  /* init structure for msg */
+//			  s = gst_structure_new(
+//								  "detected_hand_info",
+//								  "gesture", G_TYPE_CHAR, "palm",
+//								  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
+//								  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
+//								  "width", G_TYPE_UINT, (uint)filter->best_r->width,
+//								  "height", G_TYPE_UINT, (uint)filter->best_r->height,
+//								  NULL);
+//
+//			  /* init message element */
+//			  m = gst_message_new_element(GST_OBJECT(filter), s);
+//
+//			  /* send the message to GstBus */
+//			  gst_element_post_message(GST_ELEMENT(filter), m);
+//
+//			  /* check the filter->display,
+//			   * if TRUE then display the circle marker in the frame
+//			   */
+//			  if(filter->display){
+//				  CvPoint center;
+//				  int radius;
+//				  center.x = cvRound((filter->best_r->x + filter->best_r->width * 0.5));
+//				  center.y = cvRound((filter->best_r->y + filter->best_r->height * 0.5));
+//				  radius = cvRound((filter->best_r->width + filter->best_r->height) * 0.25);
+//				  cvCircle(filter->cvImage, center, radius, CV_RGB(200, 0, 0), 1, 8, 0);
+//			  }
 //		  }
-//
-//		  /* save best_r as prev_r for next frame */
-//		  filter->prev_r = (CvRect *)filter->best_r;
-//
-//		  /* debug function - defined in debug.h*/
-//		  Debug_Printf_FrameInfos();
-//
-//		  /* init structure for msg */
-//		  s = gst_structure_new(
-//		  					  "detected_hand_info",
-//		  					  "gesture", G_TYPE_CHAR, "palm",
-//		  					  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
-//		  					  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
-//		  					  "width", G_TYPE_UINT, (uint)filter->best_r->width,
-//		  					  "height", G_TYPE_UINT, (uint)filter->best_r->height,
-//		  					  NULL);
-//
-//		  /* init message element */
-//		  m = gst_message_new_element(GST_OBJECT(filter), s);
-//
-//		  /* send the message to GstBus */
-//		  gst_element_post_message(GST_ELEMENT(filter), m);
 //	  }
 
+	  /* ------detect fist gesture and send events------ */
 	  if(filter->cvCascade){
 		  /* detect hands */
 		  hands = cvHaarDetectObjects (
@@ -437,28 +461,6 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 			  m = gst_message_new_element(GST_OBJECT(filter), s);
 			  /* send the message to GstBus */
 			  gst_element_post_message(GST_ELEMENT(filter), m);
-
-			  /* init navigation events */
-			  if(filter->best_r->x < 50){
-				  gint64 last_position;
-				  GstEvent *event = gst_event_new_seek(1.0,
-						  GST_FORMAT_TIME,
-						  GST_SEEK_FLAG_FLUSH,
-						  GST_SEEK_TYPE_SET, last_position + 10 * GST_SECOND,
-						  GST_SEEK_TYPE_END, 0);
-				  event = gst_event_new_eos();
-				  gboolean result = gst_pad_push_event(filter->srcpad, event);
-				  	  if(!result) g_warning("WARNING: seek event failed.\n");
-				  gst_object_unref(event);
-				  //send seek event - back rewind
-			  }else if(filter->best_r->x > 270){
-				  //send seek event - fast forward
-			  }
-			  if(filter->best_r->y < 40){
-				  //send event - volume up
-			  }else if(filter->best_r->y > 200){
-				  //send event - volume down
-			  }
 
 			  /* check the filter->display,
 			   * if TRUE then display the circle marker in the frame

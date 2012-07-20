@@ -451,7 +451,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 			  /* define the structure for message post */
 			  s = gst_structure_new(
 					  "detected_hand_info",
-					  "gesture", G_TYPE_CHAR, "fist",
+					  "gesture", G_TYPE_STRING, "fist",
 					  "x", G_TYPE_UINT, (uint)(filter->best_r->x + filter->best_r->width * 0.5),
 					  "y", G_TYPE_UINT, (uint)(filter->best_r->y + filter->best_r->height * 0.5),
 					  "width", G_TYPE_UINT, (uint)filter->best_r->width,

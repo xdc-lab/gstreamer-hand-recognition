@@ -23,10 +23,14 @@ GstElement *playbin,
 static GstBusSyncHandler
 bus_sync_handler(GstBus *bus, GstMessage *message, GstPipeline *pipeline)
 {
+	/* is it necessary to process normal messages e.g. eof and error here? */
+
+	/* select msg */
 	if(GST_MESSAGE_TYPE (message) != GST_MESSAGE_ELEMENT ||
 			!gst_structure_has_name(message->structure, "detected_hand_info") )
 		return GST_BUS_PASS;
 
+	/* parse msg structure */
 	const GstStructure *structure = message->structure;
 		if(structure && strcmp(gst_structure_get_name(structure), "detected_hand_info") == 0){
 			/* print message type and structure name */
@@ -48,8 +52,29 @@ bus_sync_handler(GstBus *bus, GstMessage *message, GstPipeline *pipeline)
 				gst_element_set_state(playbin, GST_STATE_PAUSED);
 			else
 				gst_element_set_state(playbin, GST_STATE_PLAYING);
+
 			/* change volume */
-			g_object_set(G_OBJECT(playbin), "volume", (gdouble)(8 - g_value_get_uint(gst_structure_get_value(structure, "y"))/24 ));
+			const GValue *x_value = gst_structure_get_value(structure, "x");
+			gint x = g_value_get_uint(x_value);
+			const GValue *y_value = gst_structure_get_value(structure, "y");
+			gint y = g_value_get_uint(y_value);
+			g_object_set(G_OBJECT(playbin), "volume", (gdouble)(9 - y/24 ), NULL);
+
+			/* seek event */
+			gint64 position, length;
+			GstFormat format = GST_FORMAT_TIME;
+			gst_element_query_duration(playbin, &format, &length);
+			position = length * x / 320;
+			gst_element_set_state(playbin, GST_STATE_PAUSED);
+			gst_element_seek(GST_ELEMENT(playbin),
+					1.0,
+					format,
+					GST_SEEK_FLAG_FLUSH,
+					GST_SEEK_TYPE_SET,
+					position,
+					GST_SEEK_TYPE_NONE,
+					GST_CLOCK_TIME_NONE );
+			gst_element_set_state(GST_ELEMENT(playbin), GST_STATE_PLAYING);
 		}
 
 	gst_message_unref(message);
@@ -93,7 +118,7 @@ int main(gint argc, gchar **argv) {
 	caps = gst_caps_from_string("video/x-raw-rgb, width=320, height=240, framerate=(fraction)30/1");
 
 	/* set bus */
-	bus = gst_pipeline_get_bus(pipeline);
+	bus = gst_pipeline_get_bus(GST_PIPELINE(pipeline));
 	gst_bus_set_sync_handler(bus, (GstBusSyncHandler) bus_sync_handler, pipeline);
 	gst_object_unref(bus);
 

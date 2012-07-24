@@ -50,13 +50,14 @@
 #define VERSION "0.10.36" /* for GST_PLUGIN_DEFINE use */
 #endif
 
+#include <math.h>
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include <opencv/highgui.h>
 #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
-#include <opencv2/objdetect/objdetect.hpp>
+	#include <opencv2/objdetect/objdetect.hpp>
 #endif
 
 G_BEGIN_DECLS
@@ -79,7 +80,7 @@ struct _Gsthanddetect
   GstElement element;
   GstPad *sinkpad, *srcpad;
   gboolean display;
-  gchar *profile;
+  gchar *profile, *profile_palm;
 
   /* opencv variables
    * cvImage - image from video cam,
@@ -87,8 +88,9 @@ struct _Gsthanddetect
    * and cvGray - cvt scvImage color into gray
    */
   IplImage *cvImage, *cvGray;
-  CvHaarClassifierCascade *cvCascade;
-  CvMemStorage *cvStorage;
+  CvHaarClassifierCascade *cvCascade, *cvCascade_palm;
+  CvMemStorage *cvStorage, *cvStorage_palm;
+  CvRect *prev_r, *best_r;
 };
 
 struct _GsthanddetectClass

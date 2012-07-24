@@ -98,8 +98,9 @@ struct _GsthanddetectClass
   GstElementClass parent_class;
 };
 
-GType gst_handdetect_get_type (void);
 gboolean gst_handdetect_plugin_init (GstPlugin * plugin);
+
+GType gst_handdetect_get_type(void);
 
 G_END_DECLS
 

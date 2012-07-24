@@ -44,7 +44,8 @@
 /**
  * SECTION:element-handdetect
  *
- * FIXME:operates hand gesture detection in video streams and images, and enable media operation e.g. play/stop/fast forward/back rewind.
+ * FIXME:operates hand gesture detection in video streams and images,
+ * and enable media operation e.g. play/stop/fast forward/back rewind.
  *
  * <refsect2>
  * <title>Example launch line</title>
@@ -61,9 +62,12 @@
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
+/* gst element header */
 #include "gsthanddetect.h"
-/* for debug */
-#include "debug.h"
+/* interfaces */
+#include <gst/interfaces/navigation.h>
+/* debugging */
+#include <gst/gstinfo.h>
 
 GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 #define GST_CAT_DEFAULT gst_handdetect_debug
@@ -113,6 +117,8 @@ static gboolean gst_handdetect_set_caps (GstPad * pad, GstCaps * caps);
 static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
+
+static void gst_handdetect_navigation_interface_init(GstNavigationInterface *iface);
 
 /* clean opencv images and parameters */
 static void
@@ -215,6 +221,12 @@ gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
   filter->profile_palm = g_strdup (HAAR_FILE_PALM);
   filter->display = TRUE;
   gst_handdetect_load_profile (filter);
+}
+
+GType
+gst_handdetect_get_type(void)
+{
+	return 0;
 }
 
 static void
@@ -422,8 +434,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
       /* get the best hand */
       for (i = 0; i < (hands ? hands->total : 0); i++) {
         r = (CvRect *) cvGetSeqElem (hands, i);
-        int distance =
-            (int) sqrt (pow ((r->x - filter->prev_r->x),
+        int distance = (int) sqrt (pow ((r->x - filter->prev_r->x),
                 2) + pow ((r->y - filter->prev_r->y), 2));
         if (distance <= min_distance) {
           min_distance = distance;
@@ -505,6 +516,12 @@ handdetect_init (GstPlugin * handdetect)
 
   return gst_element_register (handdetect,
       "handdetect", GST_RANK_NONE, GST_TYPE_HANDDETECT);
+}
+
+static void
+gst_handdetect_navigation_interface_init(GstNavigationInterface *iface)
+{
+	/* here set virtual function pointers in the interface */
 }
 
 /* PACKAGE: this is usually set by autotools depending on some _INIT macro

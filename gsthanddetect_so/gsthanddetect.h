@@ -47,17 +47,16 @@
 #define __GST_HANDDETECT_H__
 
 #ifndef VERSION
-#define VERSION "0.10.36" /* for GST_PLUGIN_DEFINE use */
+#define VERSION "0.10.36"       /* for GST_PLUGIN_DEFINE use */
 #endif
 
-#include <math.h>
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include <opencv/highgui.h>
 #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
-	#include <opencv2/objdetect/objdetect.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
 #endif
 
 G_BEGIN_DECLS
@@ -71,12 +70,19 @@ G_BEGIN_DECLS
   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_HANDDETECT))
 #define GST_IS_HANDDETECT_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HANDDETECT))
-
-typedef struct _Gsthanddetect      Gsthanddetect;
+typedef struct _Gsthanddetect Gsthanddetect;
 typedef struct _GsthanddetectClass GsthanddetectClass;
+
+typedef struct
+{
+  gdouble x;
+  gdouble y;
+  gdouble radius;
+} DetectedGesture;
 
 struct _Gsthanddetect
 {
+  gdouble x, y;
   GstElement element;
   GstPad *sinkpad, *srcpad;
   gboolean display;
@@ -99,8 +105,6 @@ struct _GsthanddetectClass
 };
 
 GType gst_handdetect_get_type (void);
-gboolean gst_handdetect_plugin_init (GstPlugin * plugin);
 
 G_END_DECLS
-
 #endif /* __GST_HANDDETECT_H__ */

@@ -131,24 +131,26 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
 {
   Gsthanddetect *filter;
   const gchar *type;
+  const GstStructure *s = gst_event_get_structure (event);
+  type = gst_structure_get_string (s, "event");
+  g_print ("eventtype {%s}\n", type);
 
   filter = GST_HANDDETECT (GST_PAD_PARENT (pad));
 
   switch (GST_EVENT_TYPE (event)) {
+    case GST_EVENT_EOS:
+	  break;
     case GST_EVENT_NAVIGATION:{
-      const GstStructure *s = gst_event_get_structure (event);
-      type = gst_structure_get_string (s, "event");
-      g_print ("event type[%s]\n", type);
-
       if (g_str_equal (type, "fist-move")) {
-        // to do
+        g_print("fist-move event triggered.\n");
+    	  // to do
       } else if (g_str_equal (type, "palm-move")) {
         // to do
       } else if (g_str_equal (type, "mouse-move")) {
         gdouble x, y;
         gst_structure_get_double (s, "pointer_x", &x);
         gst_structure_get_double (s, "pointer_y", &y);
-        g_print ("mouse-move [%d, %d]\n", &x, &y);
+        g_print ("mouse-move [%f, %f]\n", x, y);
       } else if (g_str_equal (type, "mouse-button-press")) {
         // to do
       } else if (g_str_equal (type, "mouse-button-release")) {
@@ -159,7 +161,6 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
     default:
       break;
   }
-
   return gst_pad_event_default (pad, event);
 }
 
@@ -431,7 +432,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
 
       /* define structure for events */
       s = gst_structure_new ("fist-move",
-          "gesture", G_TYPE_STRING, "fist",
+          "event", G_TYPE_STRING, "fist-move",
           "x", G_TYPE_UINT,
           (uint) (filter->best_r->x + filter->best_r->width * 0.5), "y",
           G_TYPE_UINT,
@@ -439,9 +440,9 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
           G_TYPE_UINT, (uint) filter->best_r->width, "height", G_TYPE_UINT,
           (uint) filter->best_r->height, NULL);
       /* init navigation event */
-      GstNavigation *navigation;
+      GstEvent *event = gst_event_new_navigation(s);
       /* send navigation event */
-      gst_navigation_send_event(navigation, s);
+      gst_pad_push_event(pad, event);
 
       /* check the filter->display,
        * if TRUE then display the circle marker in the frame

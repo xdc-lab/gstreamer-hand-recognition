@@ -113,7 +113,9 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_STATIC_CAPS (GST_VIDEO_CAPS_RGB)
     );
 
-GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
+static void gst_handdetect_init_interfaces(GType type);
+
+GST_BOILERPLATE_FULL (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT, gst_handdetect_init_interfaces);
 
 static void gst_handdetect_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
@@ -124,6 +126,61 @@ static gboolean gst_handdetect_set_caps (GstPad * pad, GstCaps * caps);
 static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
+
+static gboolean
+gst_handdetect_interface_supported(GstImplementsInterface * iface, GType type)
+{
+	if (type == GST_TYPE_NAVIGATION )
+	    return TRUE;
+	  else
+	    return FALSE;
+}
+
+static void
+gst_handdetect_interface_init(GstImplementsInterfaceClass *klass)
+{
+	klass->supported = gst_handdetect_interface_supported;
+}
+
+static void
+gst_handdetect_navigation_send_event(GstNavigation *navigation, GstStructure *structure)
+{
+	Gsthanddetect *filter = GST_HANDDETECT(navigation);
+	GstPad *peer;
+
+	if((peer = gst_pad_get_peer(GST_VIDEO_SINK_PAD(filter)))){
+		GstEvent *event;
+		event = gst_event_new_navigation (structure);
+		// to do
+		gst_pad_send_event(peer, event);
+		gst_object_unref(peer);
+	}
+}
+static void
+gst_handdetect_navigation_init(GstNavigationInterface * iface )
+{
+	iface->send_event = gst_handdetect_navigation_send_event;
+}
+
+static void
+gst_handdetect_init_interfaces(GType type)
+{
+	static const GInterfaceInfo iface_info = {
+			(GInterfaceInitFunc) gst_handdetect_interface_init,
+			NULL,
+			NULL,
+	};
+	static const GInterfaceInfo navigation_info = {
+			(GInterfaceInitFunc) gst_handdetect_navigation_init,
+			NULL,
+			NULL,
+	};
+
+	g_type_add_interface_static(type, GST_TYPE_IMPLEMENTS_INTERFACE, &iface_info);
+	g_type_add_interface_static(type, GST_TYPE_NAVIGATION, &navigation_info);
+
+	g_type_class_ref(gst_handdetect_buffer_get_type());
+}
 
 /* handle element pad event */
 static gboolean

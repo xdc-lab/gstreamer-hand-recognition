@@ -50,6 +50,9 @@
 #define VERSION "0.10.36"       /* for GST_PLUGIN_DEFINE use */
 #endif
 
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include <gst/gst.h>
 /* opencv includes */
 #include <opencv/cv.h>
@@ -72,13 +75,13 @@ G_BEGIN_DECLS
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HANDDETECT))
 typedef struct _Gsthanddetect Gsthanddetect;
 typedef struct _GsthanddetectClass GsthanddetectClass;
+typedef struct _GsthanddetectGesture GstDetectedGesture;
 
-typedef struct
-{
+struct _GsthanddetectGesture{
   gdouble x;
   gdouble y;
   gdouble radius;
-} DetectedGesture;
+};
 
 struct _Gsthanddetect
 {
@@ -104,7 +107,7 @@ struct _GsthanddetectClass
   GstElementClass parent_class;
 };
 
-GType gst_handdetect_get_type (void);
+static GType gst_handdetect_get_type (void);
 
 G_END_DECLS
 #endif /* __GST_HANDDETECT_H__ */

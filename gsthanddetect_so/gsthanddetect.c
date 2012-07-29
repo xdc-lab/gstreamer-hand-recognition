@@ -78,10 +78,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_handdetect_debug);
 #define HAAR_FILE "/usr/local/share/opencv/haarcascades/fist.xml"
 #define HAAR_FILE_PALM "/usr/local/share/opencv/haarcascades/palm.xml"
 
-/* define detected gestures */
-#define HAND_FIST 0
-#define HAND_PALM 1
-
 /* Filter signals and args */
 enum
 {
@@ -111,7 +107,6 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (GST_VIDEO_CAPS_RGB)
     );
-//static GstElementClass *parent_class = NULL;
 
 static void gst_handdetect_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
@@ -123,8 +118,7 @@ static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
-GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement,
-		GST_TYPE_ELEMENT);
+GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
 
 /* handle element pad event */
 static gboolean
@@ -145,9 +139,9 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
       if (g_str_equal (type, "fist-move")) {
         g_print ("fist-move event triggered. ");
         uint x, y;
-        gst_structure_get_uint(s, "x", &x);
-        gst_structure_get_uint(s, "y", &y);
-        g_print("handPos:[%d, %d]\n", x, y);
+        gst_structure_get_uint (s, "x", &x);
+        gst_structure_get_uint (s, "y", &y);
+        g_print ("handPos:[%d, %d]\n", x, y);
         // to do
       } else if (g_str_equal (type, "palm-move")) {
         // to do
@@ -445,8 +439,8 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
           G_TYPE_UINT, (uint) filter->best_r->width, "height", G_TYPE_UINT,
           (uint) filter->best_r->height, NULL);
       /* send navigation event */
-      GstEvent *event = gst_event_new_navigation(s);
-      gst_pad_send_event(filter->srcpad, event);
+      GstEvent *event = gst_event_new_navigation (s);
+      gst_pad_send_event (filter->srcpad, event);
 
       /* check the filter->display,
        * if TRUE then display the circle marker in the frame
@@ -500,7 +494,8 @@ plugin_init (GstPlugin * plugin)
       0,
       "Detects hand gestures (fist & palm) to support natural-gesture -based media operation.");
 
-  return gst_element_register (plugin, "handdetect", GST_RANK_NONE, GST_TYPE_HANDDETECT);
+  return gst_element_register (plugin, "handdetect", GST_RANK_NONE,
+      GST_TYPE_HANDDETECT);
 }
 
 /* PACKAGE: this is usually set by autotools depending on some _INIT macro

@@ -116,7 +116,66 @@ static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
-GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
+static void
+gst_handdetect_navigation_send_event (GstNavigation * navigation,
+    GstStructure * structure)
+{
+  Gsthanddetect *filter = GST_HANDDETECT (navigation);
+  GstEvent *event;
+  GstPad *pad = NULL;
+
+  event = gst_event_new_navigation (structure);
+  pad = filter->sinkpad;
+
+  if (GST_IS_PAD (pad) && GST_IS_EVENT (event)) {
+    gst_pad_send_event (pad, event);
+    gst_object_unref (pad);
+  }
+}
+
+static gboolean
+gst_handdetect_interface_supported (GstImplementsInterface * iface, GType type)
+{
+  if (type == GST_TYPE_NAVIGATION)
+    return TRUE;
+  return FALSE;
+}
+
+static void
+gst_handdetect_interface_init (GstImplementsInterfaceClass * klass)
+{
+  klass->supported = gst_handdetect_interface_supported;
+}
+
+static void
+gst_handdetect_navigation_interface_init (GstNavigationInterface * iface)
+{
+  iface->send_event = gst_handdetect_navigation_send_event;
+}
+
+static void
+gst_handdetect_pad_init_interfaces (GType type)
+{
+  static const GInterfaceInfo iface_info = {
+    (GInterfaceInitFunc) gst_handdetect_interface_init,
+    NULL,
+    NULL,
+  };
+
+  static const GInterfaceInfo navigation_info = {
+    (GInterfaceInitFunc) gst_handdetect_navigation_interface_init,
+    NULL,
+    NULL,
+  };
+
+  g_type_add_interface_static (type, GST_TYPE_IMPLEMENTS_INTERFACE,
+      &iface_info);
+  g_type_add_interface_static (type, GST_TYPE_NAVIGATION, &navigation_info);
+
+}
+
+GST_BOILERPLATE_FULL (Gsthanddetect, gst_handdetect, GstElement,
+    GST_TYPE_ELEMENT, gst_handdetect_pad_init_interfaces);
 
 /* handle element pad event */
 static gboolean
@@ -158,6 +217,36 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
       break;
   }
   return gst_pad_event_default (pad, event);
+}
+
+static void
+gst_navigation_class_init (GstNavigationInterface * iface)
+{
+  /* default virtual functions */
+  iface->send_event = NULL;
+}
+
+GType
+gst_navigation_get_type (void)
+{
+  static GType navigation_type = 0;
+  static const GTypeInfo navigation_info = {
+	      sizeof (GstNavigationInterface),
+	      (GBaseInitFunc) gst_navigation_class_init,
+	      NULL,
+	      NULL,
+	      NULL,
+	      NULL,
+	      0,
+	      0,
+	      NULL,
+	    };
+
+//  navigation_type =
+//      g_type_register_static (G_TYPE_INTERFACE, "GstNavigation",
+//      &navigation_info, 0);
+
+  return navigation_type;
 }
 
 /* clean opencv images and parameters */

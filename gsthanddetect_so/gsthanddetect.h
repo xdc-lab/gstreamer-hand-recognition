@@ -75,13 +75,6 @@ G_BEGIN_DECLS
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HANDDETECT))
 typedef struct _Gsthanddetect Gsthanddetect;
 typedef struct _GsthanddetectClass GsthanddetectClass;
-typedef struct _GsthanddetectGesture GstDetectedGesture;
-
-struct _GsthanddetectGesture{
-  gdouble x;
-  gdouble y;
-  gdouble radius;
-};
 
 struct _Gsthanddetect
 {
@@ -90,7 +83,6 @@ struct _Gsthanddetect
   GstPad *sinkpad, *srcpad;
   gboolean display;
   gchar *profile, *profile_palm;
-
   /* opencv variables
    * cvImage - image from video cam,
    * scvImage - resized small cvImage,

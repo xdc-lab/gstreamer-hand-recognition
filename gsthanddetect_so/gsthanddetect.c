@@ -40,7 +40,6 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 /**
  * SECTION:element-handdetect
  *
@@ -59,7 +58,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
 /* interfaces */
 #include <gst/interfaces/navigation.h>
 /* element header */
@@ -118,7 +116,66 @@ static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
 
-GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstElement, GST_TYPE_ELEMENT);
+static void
+gst_handdetect_navigation_send_event (GstNavigation * navigation,
+    GstStructure * structure)
+{
+  Gsthanddetect *filter = GST_HANDDETECT (navigation);
+  GstEvent *event;
+  GstPad *pad = NULL;
+
+  event = gst_event_new_navigation (structure);
+  pad = filter->sinkpad;
+
+  if (GST_IS_PAD (pad) && GST_IS_EVENT (event)) {
+    gst_pad_send_event (pad, event);
+    gst_object_unref (pad);
+  }
+}
+
+static gboolean
+gst_handdetect_interface_supported (GstImplementsInterface * iface, GType type)
+{
+  if (type == GST_TYPE_NAVIGATION)
+    return TRUE;
+  return FALSE;
+}
+
+static void
+gst_handdetect_interface_init (GstImplementsInterfaceClass * klass)
+{
+  klass->supported = gst_handdetect_interface_supported;
+}
+
+static void
+gst_handdetect_navigation_interface_init (GstNavigationInterface * iface)
+{
+  iface->send_event = gst_handdetect_navigation_send_event;
+}
+
+static void
+gst_handdetect_pad_init_interfaces (GType type)
+{
+  static const GInterfaceInfo iface_info = {
+    (GInterfaceInitFunc) gst_handdetect_interface_init,
+    NULL,
+    NULL,
+  };
+
+  static const GInterfaceInfo navigation_info = {
+    (GInterfaceInitFunc) gst_handdetect_navigation_interface_init,
+    NULL,
+    NULL,
+  };
+
+  g_type_add_interface_static (type, GST_TYPE_IMPLEMENTS_INTERFACE,
+      &iface_info);
+  g_type_add_interface_static (type, GST_TYPE_NAVIGATION, &navigation_info);
+
+}
+
+GST_BOILERPLATE_FULL (Gsthanddetect, gst_handdetect, GstElement,
+    GST_TYPE_ELEMENT, gst_handdetect_pad_init_interfaces);
 
 /* handle element pad event */
 static gboolean
@@ -130,7 +187,6 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
   const GstStructure *s = gst_event_get_structure (event);
   type = gst_structure_get_string (s, "event");
   g_print ("eventtype {%s}\n", type);
-
 
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_EOS:
@@ -161,6 +217,36 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
       break;
   }
   return gst_pad_event_default (pad, event);
+}
+
+static void
+gst_navigation_class_init (GstNavigationInterface * iface)
+{
+  /* default virtual functions */
+  iface->send_event = NULL;
+}
+
+GType
+gst_navigation_get_type (void)
+{
+  static GType navigation_type = 0;
+  static const GTypeInfo navigation_info = {
+	      sizeof (GstNavigationInterface),
+	      (GBaseInitFunc) gst_navigation_class_init,
+	      NULL,
+	      NULL,
+	      NULL,
+	      NULL,
+	      0,
+	      0,
+	      NULL,
+	    };
+
+//  navigation_type =
+//      g_type_register_static (G_TYPE_INTERFACE, "GstNavigation",
+//      &navigation_info, 0);
+
+  return navigation_type;
 }
 
 /* clean opencv images and parameters */
@@ -356,14 +442,7 @@ gst_handdetect_chain (GstPad * pad, GstBuffer * buf)
   int i;
 
   filter = GST_HANDDETECT (GST_OBJECT_PARENT (pad));
-  /* get image data from gst buffer
-   * have not tested if this data is captured correctly,
-   * as the handdetect becomes much worse than that in opencv_handdetect project.
-   * */
   filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buf);
-  /* filter->cvImage = cvLoadImage("/home/javauser/workspace/pic.jpg", 0); */
-  /* debug print */
-  /* g_print("---filter->cvImage->imageData OK\n"); */
   cvCvtColor (filter->cvImage, filter->cvGray, CV_RGB2GRAY);
   cvClearMemStorage (filter->cvStorage);
 
@@ -471,7 +550,7 @@ gst_handdetect_load_profile (Gsthanddetect * filter)
   filter->cvCascade_palm =
       (CvHaarClassifierCascade *) cvLoad (filter->profile_palm, 0, 0, 0);
   if (!filter->cvCascade)
-    GST_WARNING ("could not load haar classifier cascade: %s.",
+    GST_WARNING ("WARNING: could not load haar classifier cascade: %s.",
         filter->profile);
   if (!filter->cvCascade_palm)
     GST_WARNING ("WARNING: could not load haar classifier cascade: %s.",
@@ -485,10 +564,6 @@ gst_handdetect_load_profile (Gsthanddetect * filter)
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  /* debug category for filtering log messages
-   *
-   * exchange the string 'Template handdetect' with your description
-   */
   GST_DEBUG_CATEGORY_INIT (gst_handdetect_debug,
       "handdetect",
       0,
@@ -507,12 +582,12 @@ plugin_init (GstPlugin * plugin)
 #define PACKAGE "gst_handdetect"
 #endif
 
-/* gstreamer looks for this structure to register handdetects
+/* gstreamer looks for this structure to register handdetect
  *
  * exchange the string 'Template handdetect' with your handdetect description
  */
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     "handdetect",
-    "Template handdetect",
+    "Detect hand gestures for media operations",
     plugin_init, VERSION, "LGPL", "GStreamer", "http://gstreamer.net/")

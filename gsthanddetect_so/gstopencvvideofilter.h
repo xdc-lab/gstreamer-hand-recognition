@@ -1,8 +1,6 @@
 /*
  * GStreamer
- * Copyright (C) 2005 Thomas Vander Stichele <thomas@apestaart.org>
- * Copyright (C) 2005 Ronald S. Bultje <rbultje@ronald.bitfreak.net>
- * Copyright (C) 2012 andol li <<andol@andol.info>>
+ * Copyright (C) 2010 Thiago Santos <thiago.sousa.santos@collabora.co.uk>
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -43,71 +41,66 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef __GST_HANDDETECT_H__
-#define __GST_HANDDETECT_H__
+#ifndef __GST_OPENCV_VIDEO_FILTER_H__
+#define __GST_OPENCV_VIDEO_FILTER_H__
 
-#ifndef VERSION
-#define VERSION "0.10.36"       /* for GST_PLUGIN_DEFINE use */
-#endif
-
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
 #include <gst/gst.h>
-/* opencv includes */
-#include <opencv/cv.h>
-#include <opencv/cxcore.h>
-#include <opencv/highgui.h>
-#if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
-#include <opencv2/objdetect/objdetect.hpp>
-#endif
-#include "gstopencvvideofilter.h"
+#include <gst/video/gstvideofilter.h>
+#include <cv.h>
 
 G_BEGIN_DECLS
 /* #defines don't like whitespacey bits */
-#define GST_TYPE_HANDDETECT \
-  (gst_handdetect_get_type())
-#define GST_HANDDETECT(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_HANDDETECT,Gsthanddetect))
-#define GST_HANDDETECT_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_HANDDETECT,GsthanddetectClass))
-#define GST_IS_HANDDETECT(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_HANDDETECT))
-#define GST_IS_HANDDETECT_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HANDDETECT))
-typedef struct _Gsthanddetect Gsthanddetect;
-typedef struct _GsthanddetectClass GsthanddetectClass;
+#define GST_TYPE_OPENCV_VIDEO_FILTER \
+  (gst_opencv_video_filter_get_type())
+#define GST_OPENCV_VIDEO_FILTER(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_OPENCV_VIDEO_FILTER,GstOpencvVideoFilter))
+#define GST_OPENCV_VIDEO_FILTER_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_OPENCV_VIDEO_FILTER,GstOpencvVideoFilterClass))
+#define GST_IS_OPENCV_VIDEO_FILTER(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_OPENCV_VIDEO_FILTER))
+#define GST_IS_OPENCV_VIDEO_FILTER_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_OPENCV_VIDEO_FILTER))
+#define GST_OPENCV_VIDEO_FILTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS((obj),GST_TYPE_OPENCV_VIDEO_FILTER,GstOpencvVideoFilterClass))
+#define GST_OPENCV_VIDEO_FILTER_CAST(obj) ((GstOpencvVideoFilter *) (obj))
 
-struct _Gsthanddetect
+typedef struct _GstOpencvVideoFilter GstOpencvVideoFilter;
+typedef struct _GstOpencvVideoFilterClass GstOpencvVideoFilterClass;
+
+typedef GstFlowReturn (*GstOpencvVideoFilterTransformIPFunc)
+    (GstOpencvVideoFilter * transform, GstBuffer * buffer, IplImage * img);
+typedef GstFlowReturn (*GstOpencvVideoFilterTransformFunc)
+    (GstOpencvVideoFilter * transform, GstBuffer * buffer, IplImage * img,
+    GstBuffer * outbuf, IplImage * outimg);
+
+typedef gboolean (*GstOpencvVideoFilterSetCaps)
+    (GstOpencvVideoFilter * transform, gint in_width, gint in_height,
+    gint in_depth, gint in_channels, gint out_width, gint out_height,
+    gint out_depth, gint out_channels);
+
+struct _GstOpencvVideoFilter
 {
-  GstOpencvVideoFilter element;
+  GstVideoFilter trans;
 
-  gboolean display;
-  gchar *profile, *profile_palm;
+  gboolean in_place;
 
-  gdouble x, y;
-
-  /* opencv
-   * cvImage - image from video cam,
-   * scvImage - resized small cvImage,
-   * and cvGray - cvt scvImage color into gray
-   */
   IplImage *cvImage;
-  IplImage *cvGray;
-  CvHaarClassifierCascade *cvCascade;
-  CvHaarClassifierCascade *cvCascade_palm;
-  CvMemStorage *cvStorage;
-  CvMemStorage *cvStorage_palm;
-  CvRect *prev_r;
-  CvRect *best_r;
+  IplImage *out_cvImage;
 };
 
-struct _GsthanddetectClass
+struct _GstOpencvVideoFilterClass
 {
-  GstOpencvVideoFilterClass parent_class;
+  GstVideoFilterClass parent_class;
+
+  GstOpencvVideoFilterTransformFunc cv_trans_func;
+  GstOpencvVideoFilterTransformIPFunc cv_trans_ip_func;
+
+  GstOpencvVideoFilterSetCaps cv_set_caps;
 };
 
-GType gst_handdetect_get_type (void);
+GType gst_opencv_video_filter_get_type (void);
+
+void gst_opencv_video_filter_set_in_place (GstOpencvVideoFilter * transform,
+    gboolean ip);
 
 G_END_DECLS
-#endif /* __GST_HANDDETECT_H__ */
+#endif /* __GST_OPENCV_VIDEO_FILTER_H__ */

@@ -107,9 +107,6 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE ("src",
     GST_STATIC_CAPS (GST_VIDEO_CAPS_RGB)
     );
 
-//GST_BOILERPLATE (Gsthanddetect, gst_handdetect, GstOpencvVideoFilter,
-//    GST_TYPE_OPENCV_VIDEO_FILTER);
-
 static void gst_handdetect_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_handdetect_get_property (GObject * object, guint prop_id,
@@ -118,27 +115,33 @@ static void gst_handdetect_get_property (GObject * object, guint prop_id,
 static gboolean gst_handdetect_set_caps (GstOpencvVideoFilter * transform,
     gint in_width, gint in_height, gint in_depth, gint in_channels,
     gint out_width, gint out_height, gint out_depth, gint out_channels);
-//static GstFlowReturn gst_handdetect_chain (GstPad * pad, GstBuffer * buf);
 static GstFlowReturn gst_handdetect_transform (GstOpencvVideoFilter * transform,
     GstBuffer * buffer, IplImage * img, GstBuffer * outbuf, IplImage * outimg);
 
 static void gst_handdetect_load_profile (Gsthanddetect * filter);
+
+static void gst_handdetect_navigation_send_event (GstNavigation * navigation, GstStructure * structure);
+static gboolean gst_handdetect_interface_supported (GstImplementsInterface * iface, GType type);
+static void gst_handdetect_interface_init (GstImplementsInterfaceClass * klass);
+static void gst_handdetect_init_interfaces (GType type);
+static gboolean gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event);
+
+GST_BOILERPLATE_FULL (Gsthanddetect, gst_handdetect, GstOpencvVideoFilter,
+    GST_TYPE_OPENCV_VIDEO_FILTER, gst_handdetect_init_interfaces);
 
 static void
 gst_handdetect_navigation_send_event (GstNavigation * navigation,
     GstStructure * structure)
 {
   Gsthanddetect *filter = GST_HANDDETECT (navigation);
+  GstBaseTransform *trans = GST_BASE_TRANSFORM_CAST (filter);
   GstEvent *event;
-  GstPad *pad = NULL;
+  GstPad *pad = trans->srcpad;
 
   event = gst_event_new_navigation (structure);
-  pad = GST_BASE_TRANSFORM_SRC_PAD (filter);
 
-  if (GST_IS_PAD (pad) && GST_IS_EVENT (event)) {
+  if (GST_IS_PAD (pad) && GST_IS_EVENT (event))
     gst_pad_send_event (pad, event);
-    gst_object_unref (pad);
-  }
 }
 
 static gboolean
@@ -156,41 +159,21 @@ gst_handdetect_interface_init (GstImplementsInterfaceClass * klass)
 }
 
 static void
-gst_handdetect_navigation_init (GstNavigationInterface * iface)
-{
-  iface->send_event = gst_handdetect_navigation_send_event;
-}
-
-static void
-gst_handdetect_pad_init_interfaces (GType type)
+gst_handdetect_init_interfaces (GType type)
 {
   static const GInterfaceInfo iface_info = {
     (GInterfaceInitFunc) gst_handdetect_interface_init,
     NULL,
     NULL,
   };
-
-  static const GInterfaceInfo navigation_info = {
-    (GInterfaceInitFunc) gst_handdetect_navigation_init,
-    NULL,
-    NULL,
-  };
-
   g_type_add_interface_static (type, GST_TYPE_IMPLEMENTS_INTERFACE,
       &iface_info);
-  g_type_add_interface_static (type, GST_TYPE_NAVIGATION, &navigation_info);
-
 }
-
-GST_BOILERPLATE_FULL (Gsthanddetect, gst_handdetect, GstOpencvVideoFilter,
-    GST_TYPE_OPENCV_VIDEO_FILTER, gst_handdetect_pad_init_interfaces);
 
 /* handle element pad event */
 static gboolean
 gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
 {
-  //Gsthanddetect *filter;
-  //filter = GST_HANDDETECT (trans);
   const gchar *type;
   const GstStructure *s = gst_event_get_structure (event);
   type = gst_structure_get_string (s, "event");
@@ -201,11 +184,11 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
       break;
     case GST_EVENT_NAVIGATION:{
       if (g_str_equal (type, "fist-move")) {
-        g_print ("Fist-move event detected.\n ");
+        g_print ("   Fist-move event detected.\n ");
         uint x, y;
         gst_structure_get_uint (s, "x", &x);
         gst_structure_get_uint (s, "y", &y);
-        g_print ("HandPos:[%d, %d]\n", x, y);
+        g_print ("      HandPos:[%d, %d]\n", x, y);
         // to do
       } else if (g_str_equal (type, "palm-move")) {
         // to do
@@ -215,9 +198,9 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
         gst_structure_get_double (s, "pointer_y", &y);
         g_print ("Mouse-move [%f, %f]\n", x, y);
       } else if (g_str_equal (type, "mouse-button-press")) {
-        // to do
+    	  g_print ("Mouse botton press\n");
       } else if (g_str_equal (type, "mouse-button-release")) {
-        // to do
+    	  g_print ("Mouse button release\n");
       }
       break;
     }
@@ -231,7 +214,7 @@ static void
 gst_navigation_class_init (GstNavigationInterface * iface)
 {
   /* default virtual functions */
-  iface->send_event = NULL;
+  iface->send_event = gst_handdetect_navigation_send_event;
 }
 
 GType
@@ -250,9 +233,9 @@ gst_navigation_get_type (void)
     NULL,
   };
 
-//  navigation_type =
-//      g_type_register_static (G_TYPE_INTERFACE, "GstNavigation",
-//      &navigation_info, 0);
+  navigation_type =
+      g_type_register_static (G_TYPE_INTERFACE, "GstNavigation",
+      &navigation_info, 0);
 
   return navigation_type;
 }
@@ -338,24 +321,10 @@ gst_handdetect_class_init (GsthanddetectClass * klass)
 static void
 gst_handdetect_init (Gsthanddetect * filter, GsthanddetectClass * gclass)
 {
-//  filter->sinkpad = gst_pad_new_from_static_template (&sink_factory, "sink");
-//  gst_pad_set_setcaps_function (filter->sinkpad,
-//      GST_DEBUG_FUNCPTR (gst_handdetect_set_caps));
-//  gst_pad_set_getcaps_function (filter->sinkpad,
-//      GST_DEBUG_FUNCPTR (gst_pad_proxy_getcaps));
-//  gst_pad_set_chain_function (filter->sinkpad,
-//      GST_DEBUG_FUNCPTR (gst_handdetect_chain));
-
-//  filter->srcpad = gst_pad_new_from_static_template (&src_factory, "src");
-//  gst_pad_set_getcaps_function (filter->srcpad,
-//      GST_DEBUG_FUNCPTR (gst_pad_proxy_getcaps));
   GstBaseTransform *trans = GST_BASE_TRANSFORM_CAST (filter);
 
   gst_pad_set_event_function (trans->srcpad,
       GST_DEBUG_FUNCPTR (gst_handdetect_handle_pad_event));
-
-  //gst_element_add_pad (GST_ELEMENT (filter), filter->sinkpad);
-  //gst_element_add_pad (GST_ELEMENT (filter), filter->srcpad);
 
   filter->profile = g_strdup (HAAR_FILE);
   filter->profile_palm = g_strdup (HAAR_FILE_PALM);
@@ -461,6 +430,10 @@ gst_handdetect_transform (GstOpencvVideoFilter * base, GstBuffer * buffer,
 
   filter = GST_HANDDETECT (base);
   filter->cvImage->imageData = (char *) GST_BUFFER_DATA (buffer);
+  /* 320 x 240 is with the best detect accuracy, if not, give warnings */
+  if(filter->cvImage->width > 320 || filter->cvImage->height > 240)
+	  GST_INFO ("WARNING: resize to 320 x 240 to have best detect accuracy.\n");
+  /* cvt to gray colour space for hand detect */
   cvCvtColor (filter->cvImage, filter->cvGray, CV_RGB2GRAY);
   cvClearMemStorage (filter->cvStorage);
 
@@ -511,10 +484,7 @@ gst_handdetect_transform (GstOpencvVideoFilter * base, GstBuffer * buffer,
       /* save best_r as prev_r for next frame */
       filter->prev_r = (CvRect *) filter->best_r;
 
-      /* debug function - defined in debug.h */
-      /* Debug_Printf_FrameInfos (); */
-
-      /* define the structure for message post */
+      /* define structure for message post */
       s = gst_structure_new ("detected_hand_info",
           "gesture", G_TYPE_STRING, "fist",
           "x", G_TYPE_UINT,
@@ -525,10 +495,10 @@ gst_handdetect_transform (GstOpencvVideoFilter * base, GstBuffer * buffer,
           (uint) filter->best_r->height, NULL);
       /* init message element */
       m = gst_message_new_element (GST_OBJECT (filter), s);
-      /* send the message to GstBus */
+      /* send message */
       gst_element_post_message (GST_ELEMENT (filter), m);
 
-      /* define structure for events */
+      /* define structure for event */
       s = gst_structure_new ("fist-move",
           "event", G_TYPE_STRING, "fist-move",
           "x", G_TYPE_UINT,
@@ -537,13 +507,11 @@ gst_handdetect_transform (GstOpencvVideoFilter * base, GstBuffer * buffer,
           (uint) (filter->best_r->y + filter->best_r->height * 0.5), "width",
           G_TYPE_UINT, (uint) filter->best_r->width, "height", G_TYPE_UINT,
           (uint) filter->best_r->height, NULL);
-      /* send navigation event */
+      /* set and send navigation event */
       GstEvent *event = gst_event_new_navigation (s);
       gst_pad_send_event (trans->srcpad, event);
 
-      /* check the filter->display,
-       * if TRUE then display the circle marker in the frame
-       */
+      /* check filter->display, if TRUE, display the circle marker in the frame */
       if (filter->display) {
         CvPoint center;
         int radius;
@@ -556,16 +524,14 @@ gst_handdetect_transform (GstOpencvVideoFilter * base, GstBuffer * buffer,
     }
   }
 
-  /*
-   * just push out the incoming buffer without touching it
-   */
-  return gst_pad_push (GST_BASE_TRANSFORM_SRC_PAD (filter), buffer);
+  /* just push out the incoming buffer */
+  return gst_pad_push (trans->srcpad, buffer);
 }
 
 static void
 gst_handdetect_load_profile (Gsthanddetect * filter)
 {
-  g_print ("Loading profiles...\n");
+  GST_INFO ( "Loading profiles...\n");
 
   filter->cvCascade =
       (CvHaarClassifierCascade *) cvLoad (filter->profile, 0, 0, 0);
@@ -575,12 +541,12 @@ gst_handdetect_load_profile (Gsthanddetect * filter)
     GST_WARNING ("WARNING: Could not load HAAR classifier cascade: %s.\n",
         filter->profile);
   else
-    g_print ("Loaded profile %s\n", filter->profile);
+	  GST_INFO ( "Loaded profile %s\n", filter->profile);
   if (!filter->cvCascade_palm)
     GST_WARNING ("WARNING: Could not load HAAR classifier cascade: %s.\n",
         filter->profile_palm);
   else
-    g_print ("Loaded profile %s\n", filter->profile_palm);
+	  GST_INFO ( "Loaded profile %s\n", filter->profile_palm);
 }
 
 /* entry point to initialize the plug-in

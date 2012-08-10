@@ -61,8 +61,10 @@
 #if (CV_MAJOR_VERSION >= 2) && (CV_MINOR_VERSION >= 2)
 #include <opencv2/objdetect/objdetect.hpp>
 #endif
+#include "gstopencvvideofilter.h"
 
 G_BEGIN_DECLS
+/* #defines don't like whitespacey bits */
 #define GST_TYPE_HANDDETECT \
   (gst_handdetect_get_type())
 #define GST_HANDDETECT(obj) \
@@ -78,28 +80,34 @@ typedef struct _GsthanddetectClass GsthanddetectClass;
 
 struct _Gsthanddetect
 {
-  gdouble x, y;
-  GstElement element;
-  GstPad *sinkpad, *srcpad;
+  GstOpencvVideoFilter element;
+
   gboolean display;
   gchar *profile, *profile_palm;
-  /* opencv variables
+
+  gdouble x, y;
+
+  /* opencv
    * cvImage - image from video cam,
    * scvImage - resized small cvImage,
    * and cvGray - cvt scvImage color into gray
    */
-  IplImage *cvImage, *cvGray;
-  CvHaarClassifierCascade *cvCascade, *cvCascade_palm;
-  CvMemStorage *cvStorage, *cvStorage_palm;
-  CvRect *prev_r, *best_r;
+  IplImage *cvImage;
+  IplImage *cvGray;
+  CvHaarClassifierCascade *cvCascade;
+  CvHaarClassifierCascade *cvCascade_palm;
+  CvMemStorage *cvStorage;
+  CvMemStorage *cvStorage_palm;
+  CvRect *prev_r;
+  CvRect *best_r;
 };
 
 struct _GsthanddetectClass
 {
-  GstElementClass parent_class;
+  GstOpencvVideoFilterClass parent_class;
 };
 
-static GType gst_handdetect_get_type (void);
+GType gst_handdetect_get_type (void);
 
 G_END_DECLS
 #endif /* __GST_HANDDETECT_H__ */

@@ -23,8 +23,6 @@ GstElement *playbin,
 static GstBusSyncHandler
 bus_sync_handler(GstBus *bus, GstMessage *message, GstPipeline *pipeline)
 {
-	/* is it necessary to process normal messages e.g. eof and error here? */
-
 	/* select msg */
 	if(GST_MESSAGE_TYPE (message) != GST_MESSAGE_ELEMENT ||
 			!gst_structure_has_name(message->structure, "detected_hand_info") )

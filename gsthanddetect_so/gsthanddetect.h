@@ -68,17 +68,17 @@ G_BEGIN_DECLS
 #define GST_TYPE_HANDDETECT \
   (gst_handdetect_get_type())
 #define GST_HANDDETECT(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_HANDDETECT,Gsthanddetect))
+  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_HANDDETECT,GstHanddetect))
 #define GST_HANDDETECT_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_HANDDETECT,GsthanddetectClass))
+  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_HANDDETECT,GstHanddetectClass))
 #define GST_IS_HANDDETECT(obj) \
   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_HANDDETECT))
 #define GST_IS_HANDDETECT_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HANDDETECT))
-typedef struct _Gsthanddetect Gsthanddetect;
-typedef struct _GsthanddetectClass GsthanddetectClass;
+typedef struct _GstHanddetect GstHanddetect;
+typedef struct _GstHanddetectClass GstHanddetectClass;
 
-struct _Gsthanddetect
+struct _GstHanddetect
 {
   GstOpencvVideoFilter element;
 
@@ -102,7 +102,7 @@ struct _Gsthanddetect
   CvRect *best_r;
 };
 
-struct _GsthanddetectClass
+struct _GstHanddetectClass
 {
   GstOpencvVideoFilterClass parent_class;
 };

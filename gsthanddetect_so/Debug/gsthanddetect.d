@@ -1,4 +1,5 @@
 gsthanddetect.d: ../gsthanddetect.c \
+ /usr/local/include/gstreamer-0.10/gst/interfaces/navigation.h \
  /usr/local/include/gstreamer-0.10/gst/gst.h /usr/include/glib-2.0/glib.h \
  /usr/include/glib-2.0/glib/galloca.h /usr/include/glib-2.0/glib/gtypes.h \
  /usr/local/lib/glib-2.0/include/glibconfig.h \
@@ -157,7 +158,16 @@ gsthanddetect.d: ../gsthanddetect.c \
  /usr/local/include/gstreamer-0.10/gst/gstutils.h \
  /usr/local/include/gstreamer-0.10/gst/gstparse.h \
  /usr/local/include/gstreamer-0.10/gst/gstxml.h \
- /usr/local/include/gstreamer-0.10/gst/gstcompat.h ../gsthanddetect.h
+ /usr/local/include/gstreamer-0.10/gst/gstcompat.h ../gsthanddetect.h \
+ ../gstopencvvideofilter.h \
+ /usr/local/include/gstreamer-0.10/gst/video/gstvideofilter.h \
+ /usr/local/include/gstreamer-0.10/gst/base/gstbasetransform.h \
+ /usr/local/include/opencv/cv.h \
+ /usr/local/include/gstreamer-0.10/gst/video/video.h \
+ /usr/local/include/gstreamer-0.10/gst/video/video-enumtypes.h \
+ ../gstopencvutils.h
+
+/usr/local/include/gstreamer-0.10/gst/interfaces/navigation.h:
 
 /usr/local/include/gstreamer-0.10/gst/gst.h:
 
@@ -510,3 +520,17 @@ gsthanddetect.d: ../gsthanddetect.c \
 /usr/local/include/gstreamer-0.10/gst/gstcompat.h:
 
 ../gsthanddetect.h:
+
+../gstopencvvideofilter.h:
+
+/usr/local/include/gstreamer-0.10/gst/video/gstvideofilter.h:
+
+/usr/local/include/gstreamer-0.10/gst/base/gstbasetransform.h:
+
+/usr/local/include/opencv/cv.h:
+
+/usr/local/include/gstreamer-0.10/gst/video/video.h:
+
+/usr/local/include/gstreamer-0.10/gst/video/video-enumtypes.h:
+
+../gstopencvutils.h:

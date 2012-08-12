@@ -114,8 +114,6 @@ static void gst_handdetect_get_property (GObject * object, guint prop_id,
 static gboolean gst_handdetect_set_caps (GstOpencvVideoFilter * transform,
     gint in_width, gint in_height, gint in_depth, gint in_channels,
     gint out_width, gint out_height, gint out_depth, gint out_channels);
-//static GstFlowReturn gst_handdetect_transform (GstOpencvVideoFilter * transform,
-    //GstBuffer * buffer, IplImage * img, GstBuffer * outbuf, IplImage * outimg);
 static GstFlowReturn gst_handdetect_transform_ip (GstOpencvVideoFilter * transform, GstBuffer * buffer, IplImage * img);
 
 static void gst_handdetect_load_profile (GstHanddetect * filter);
@@ -300,7 +298,6 @@ gst_handdetect_class_init (GstHanddetectClass * klass)
   gobject_class = (GObjectClass *) klass;
   gstopencvbasefilter_class = (GstOpencvVideoFilterClass *) klass;
 
-  //gstopencvbasefilter_class->cv_trans_func = gst_handdetect_transform;
   gstopencvbasefilter_class->cv_trans_ip_func = gst_handdetect_transform_ip;
   gstopencvbasefilter_class->cv_set_caps = gst_handdetect_set_caps;
 
@@ -494,9 +491,6 @@ static GstFlowReturn
 gst_handdetect_transform_ip (GstOpencvVideoFilter * transform, GstBuffer * buffer, IplImage * img)
 {
   GstHanddetect *filter = GST_HANDDETECT (transform);
-  //GstBaseTransform *trans = GST_BASE_TRANSFORM_CAST (filter);
-  //GstPad *pad = trans->srcpad;
-
   CvSeq *hands;
   CvRect *r;
   GstStructure *s;

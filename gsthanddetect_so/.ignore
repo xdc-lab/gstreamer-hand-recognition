@@ -10,3 +10,4 @@ Debug/
 *.bak*
 .cproject
 .project
+.la

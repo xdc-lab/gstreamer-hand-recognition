@@ -84,6 +84,10 @@ struct _GstHanddetect
 
   gboolean display;
   gchar *profile, *profile_palm;
+  uint roi_x;
+  uint roi_y;
+  uint roi_width;
+  uint roi_height;
 
   gdouble x, y;
 

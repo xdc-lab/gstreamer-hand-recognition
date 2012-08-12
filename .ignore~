@@ -8,5 +8,3 @@ gsthanddetect_so/Debug/
 *.c~
 *~
 *.bak*
-.cproject
-.project

@@ -1,4 +1,4 @@
-gsthanddetect_so/Debug/
+Debug/
 *.tmp
 *.o
 *.so

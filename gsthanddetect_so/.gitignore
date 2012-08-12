@@ -1,0 +1,11 @@
+*.tmp
+*.o
+*.so
+*.la
+*.d
+*.h~
+*.c~
+*~
+*.bak*
+.cproject
+.project

@@ -207,7 +207,6 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
         gst_structure_get_uint (s, "y", &y);
         GST_DEBUG_OBJECT (GST_HANDDETECT (gst_pad_get_parent (pad)),
             "Fist Pos:[%d, %d]\n", x, y);
-        g_print ("fist-move{%d, %d}\n", x, y);
       } else if (g_str_equal (name, "palm-move")) {
         GST_DEBUG_OBJECT (GST_HANDDETECT (gst_pad_get_parent (pad)),
             "Palm-move event\n ");
@@ -222,7 +221,6 @@ gst_handdetect_handle_pad_event (GstPad * pad, GstEvent * event)
         gst_structure_get_double (s, "pointer_y", &y);
         GST_DEBUG_OBJECT (GST_HANDDETECT (gst_pad_get_parent (pad)),
             "Mouse-move [%f, %f]\n", x, y);
-        g_print ("mouse-move{%f, %f}\n", x, y);
       } else if (g_str_equal (name, "mouse-button-press")) {
         GST_DEBUG ("Mouse botton press\n");
       } else if (g_str_equal (name, "mouse-button-release")) {
@@ -515,9 +513,8 @@ gst_handdetect_transform_ip (GstOpencvVideoFilter * transform,
      * best_r => best hand in this frame
      */
     if (hands && hands->total > 0) {
-      /* Init distance for comparisons,
-       * 400 is the maximum distance in 320x240 frame */
-      int min_distance = 400;
+      /* suppose a min_distance for init comparison */
+      int min_distance = filter->cvImage->width + filter->cvImage->height;
       /* Init filter->prev_r */
       CvRect temp_r = cvRect (0, 0, 0, 0);
       if (filter->prev_r == NULL)
@@ -564,27 +561,31 @@ gst_handdetect_transform_ip (GstOpencvVideoFilter * transform,
         /* Send message */
         gst_element_post_message (GST_ELEMENT (filter), m);
 
+#if 0
         /* send event
-         * here using mouse-move event instead of fist-move or palm-move event
+         * here we use mouse-move event instead of fist-move or palm-move event
          * !!! this will CHANGE in the future !!!
          * !!! by adding gst_navigation_send_hand_detect_event() in navigation.c !!!
          */
-//        gst_navigation_send_mouse_event (GST_NAVIGATION (filter),
-//            "mouse-move",
-//            0,
-//            (double) (filter->best_r->x + filter->best_r->width * 0.5),
-//            (double) (filter->best_r->y + filter->best_r->height * 0.5));
-        GstEvent *event =
-            gst_event_new_navigation (gst_structure_new
-            ("application/x-gst-navigation", "event", G_TYPE_STRING,
-                "mouse-move",
-                "button", G_TYPE_INT, 0,
-                "pointer_x", G_TYPE_DOUBLE,
-                (double) (filter->best_r->x + filter->best_r->width * 0.5),
-                "pointer_y", G_TYPE_DOUBLE,
-                (double) (filter->best_r->y + filter->best_r->height * 0.5),
-                NULL));
-        gst_pad_send_event (GST_BASE_TRANSFORM_CAST (filter)->srcpad, event);
+        gst_navigation_send_mouse_event (GST_NAVIGATION (filter),
+            "mouse-move",
+            0,
+            (double) (filter->best_r->x + filter->best_r->width * 0.5),
+            (double) (filter->best_r->y + filter->best_r->height * 0.5));
+#endif
+        /*
+           GstEvent *event =
+           gst_event_new_navigation (gst_structure_new
+           ("application/x-gst-navigation", "event", G_TYPE_STRING,
+           "mouse-move",
+           "button", G_TYPE_INT, 0,
+           "pointer_x", G_TYPE_DOUBLE,
+           (double) (filter->best_r->x + filter->best_r->width * 0.5),
+           "pointer_y", G_TYPE_DOUBLE,
+           (double) (filter->best_r->y + filter->best_r->height * 0.5),
+           NULL));
+           gst_pad_send_event (GST_BASE_TRANSFORM_CAST (filter)->srcpad, event);
+         */
       }
 
       /* Check filter->display,

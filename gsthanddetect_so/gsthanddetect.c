@@ -556,7 +556,7 @@ gst_handdetect_transform_ip (GstOpencvVideoFilter * transform,
       /* Init message element */
       m = gst_message_new_element (GST_OBJECT (filter), s);
       /* Send message */
-      if(gst_element_post_message (GST_ELEMENT (filter), m)) g_print ("fist msg sent\n");
+      gst_element_post_message (GST_ELEMENT (filter), m);
 
 #if 0
       /* send event
@@ -648,7 +648,7 @@ gst_handdetect_transform_ip (GstOpencvVideoFilter * transform,
         /* Init message element */
         m = gst_message_new_element (GST_OBJECT (filter), s);
         /* Send message */
-        gst_element_post_message (GST_ELEMENT (filter), m); g_print ("palm msg sent\n");
+        gst_element_post_message (GST_ELEMENT (filter), m);
 
 #if 0
         /* send event

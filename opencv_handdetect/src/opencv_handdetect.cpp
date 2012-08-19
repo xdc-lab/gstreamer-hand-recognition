@@ -25,7 +25,7 @@ const double scale = 1.1;
 CvMemStorage* storage = 0;
 CvHaarClassifierCascade* cascade = 0;
 void detectAndDraw(IplImage *input_image);
-const char* cascade_name = "fist.xml";
+const char* cascade_name = "palm.xml";
 
 //define the core function
 //void detectAndDraw(Mat& img, CascadeClassifier& cascade, double scale);
@@ -131,7 +131,7 @@ void detectAndDraw(IplImage *img)
 				cascade,
 				storage,
 				scale, 2, CV_HAAR_DO_CANNY_PRUNING,
-                cvSize(24, 24) );
+                cvSize(20, 20) );
 		for( i = 0; i < (faces ? faces->total : 0); i++ )
 		{
 			CvRect* r = (CvRect*)cvGetSeqElem( faces, i );
